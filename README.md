@@ -1,2 +1,4 @@
 # tool_sentry
-Simple sentry plugin to mooodle TESTED in moodle 3.x but can work in earlyer version changing composers requiriments
+Simple sentry plugin to moodle TESTED in moodle 4.x.
+
+It should work on the previous version but I did not test or configured it yet, it requires PHP>=7.3 for now.
