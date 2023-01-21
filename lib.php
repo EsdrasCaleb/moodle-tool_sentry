@@ -1,5 +1,7 @@
 <?php 
-
+/**
+ * Just check for errors
+ */
 function checkbugs(){
     $dns = get_config('tool_sentry', 'dns');
     if($dns){
@@ -13,7 +15,9 @@ function checkbugs(){
 
 }
 
-
+/**
+ * Initialize sentry and check for errors
+ */
 function initializecheck(){
     $dns = get_config('tool_sentry', 'dns');
     if($dns){

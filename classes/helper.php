@@ -12,6 +12,5 @@ class tool_sentry_helper {
     public static function observer(\core\event\base $event) {
         global $CFG;
         require_once $CFG->dirroot."/admin/tool/sentry/lib.php";
-        checkbugs();
     }
 }
