@@ -4,13 +4,20 @@ $observers = array();
 
 
 //Evento apara o forum
-/*
-TODO call events selected and put here
+
 $observers[] = array(
-    'eventname' => 'core\event\email_failed',
+    'eventname' => 'core\event\course_viewed',
     'callback' => 'tool_sentry_helper::observer',
     'includefile' => '/admin/tool/sentry/classes/helper.php',
     'internal' => true,
     'priority'    => 9999,
 );
-*/
+
+$observers[] = array(
+    'eventname' => 'core\event\course_viewed',
+    'callback' => 'tool_sentry_helper::observer',
+    'includefile' => '/admin/tool/sentry/classes/helper.php',
+    'internal' => true,
+    'priority'    => 1,
+);
+

@@ -10,6 +10,8 @@ class tool_sentry_helper {
      * @return void
      */
     public static function observer(\core\event\base $event) {
-        \Sentry\captureLastError();
+        global $CFG;
+        require_once $CFG->dirroot."/admin/tool/sentry/lib.php";
+        checkbugs();
     }
 }
