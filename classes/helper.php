@@ -1,5 +1,5 @@
-<?php 
-defined('MOODLE_INTERNAL') || die();
+<?php
+
 class tool_sentry_helper {
 
     /**

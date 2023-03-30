@@ -1,9 +1,8 @@
-<?php 
+<?php
+
+defined('MOODLE_INTERNAL') || die();
 
 $observers = array();
-
-
-//Evento apara o forum
 
 $observers[] = array(
     'eventname' => 'core\event\course_viewed',
@@ -12,6 +11,3 @@ $observers[] = array(
     'internal' => true,
     'priority'    => 9999,
 );
-
-
-
