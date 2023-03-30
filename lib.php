@@ -1,6 +1,7 @@
 <?php
 
 defined('MOODLE_INTERNAL') || die();
+
 /**
  * Just check for errors.
  */
