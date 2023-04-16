@@ -6,8 +6,14 @@ $observers = array();
 
 $observers[] = array(
     'eventname' => 'core\event\base',
-    'callback' => 'tool_sentry_helper::observer',
-    'includefile' => '/admin/tool/sentry/classes/helper.php',
+    'callback' => '\tool_sentry\helper::init',
     'internal' => true,
     'priority'    => 9999,
+);
+
+$observers[] = array(
+    'eventname' => 'core\event\base',
+    'callback' => '\tool_sentry\helper::geterros',
+    'internal' => true,
+    'priority'    => 0,
 );

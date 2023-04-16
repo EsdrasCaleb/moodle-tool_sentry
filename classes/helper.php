@@ -1,16 +1,40 @@
 <?php
+namespace tool_sentry;
 
-class tool_sentry_helper {
+defined('MOODLE_INTERNAL') || die();
+
+class helper {
 
     /**
-     * Observe the events, and dispatch them if necessary.
-     * Todos os eventos disparados devem ser tratados aqui.
+     * Initialize sentry
      *
      * @param \core\event\base $event The event.
      * @return void
      */
-    public static function observer(\core\event\base $event) {
+    public static function init(\core\event\base $event) {
         global $CFG;
-        require_once $CFG->dirroot."/admin/tool/sentry/lib.php";
+        $dns = get_config('tool_sentry', 'dns');
+        if ($dns) {
+            global $CFG;
+            require_once($CFG->dirroot.'/admin/tool/sentry/vendor/autoload.php');
+            \Sentry\init(['dsn' => $dns]);
+        }
+    }
+
+    /**
+     * Get erros and send
+     *
+     * @param \core\event\base $event The event.
+     * @return void
+     */
+    public static function geterros(\core\event\base $event) {
+        global $CFG;
+        $dns = get_config('tool_sentry', 'dns');
+        if ($dns) {
+            global $CFG;
+            require_once($CFG->dirroot.'/admin/tool/sentry/vendor/autoload.php');
+            \Sentry\captureLastError();
+            algo();
+        }
     }
 }

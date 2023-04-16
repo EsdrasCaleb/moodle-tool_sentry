@@ -26,7 +26,6 @@
 defined('MOODLE_INTERNAL') || die;
 
 global $CFG;
-require_once($CFG->dirroot."/admin/tool/sentry/lib.php");
         
 if (is_siteadmin()) {
     if (!$ADMIN->locate('tool_sentry')) {
