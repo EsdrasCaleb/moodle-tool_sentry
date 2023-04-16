@@ -3,6 +3,8 @@ namespace tool_sentry;
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->dirroot.'/admin/tool/sentry/vendor/autoload.php');
+
 class helper {
 
     /**
@@ -12,11 +14,8 @@ class helper {
      * @return void
      */
     public static function init(\core\event\base $event) {
-        global $CFG;
         $dns = get_config('tool_sentry', 'dns');
         if ($dns) {
-            global $CFG;
-            require_once($CFG->dirroot.'/admin/tool/sentry/vendor/autoload.php');
             \Sentry\init(['dsn' => $dns]);
         }
     }
@@ -28,13 +27,9 @@ class helper {
      * @return void
      */
     public static function geterros(\core\event\base $event) {
-        global $CFG;
         $dns = get_config('tool_sentry', 'dns');
         if ($dns) {
-            global $CFG;
-            require_once($CFG->dirroot.'/admin/tool/sentry/vendor/autoload.php');
             \Sentry\captureLastError();
-            algo();
         }
     }
 }
