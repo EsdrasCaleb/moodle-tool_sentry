@@ -19,6 +19,7 @@
  *
  * @package    tool
  * @subpackage sentry
+ * @copyright  2023 Esdras Caleb
  * @author     Esdras Caleb <esdrascaleb@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
