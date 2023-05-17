@@ -18,7 +18,6 @@
  * Provides conection with sentry.io to track errors in your moodle site using sentry
  *
  * @package    tool_sentry
- * @subpackage sentry
  * @copyright  2023 Esdras Caleb
  * @author     Esdras Caleb <esdrascaleb@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
