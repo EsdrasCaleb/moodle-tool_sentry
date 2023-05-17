@@ -14,13 +14,12 @@ namespace Symfony\Contracts\HttpClient\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TimeoutExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * A reference test suite for HttpClientInterface implementations.
- *
- * @experimental in 1.1
  */
 abstract class HttpClientTestCase extends TestCase
 {
@@ -227,13 +226,13 @@ abstract class HttpClientTestCase extends TestCase
         try {
             $response->getHeaders();
             $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface $e) {
+        } catch (ClientExceptionInterface) {
         }
 
         try {
             $response->getContent();
             $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface $e) {
+        } catch (ClientExceptionInterface) {
         }
 
         $this->assertSame(404, $response->getStatusCode());
@@ -247,7 +246,7 @@ abstract class HttpClientTestCase extends TestCase
                 $this->assertTrue($chunk->isFirst());
             }
             $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface $e) {
+        } catch (ClientExceptionInterface) {
         }
     }
 
@@ -267,14 +266,14 @@ abstract class HttpClientTestCase extends TestCase
         try {
             $response->getStatusCode();
             $this->fail(TransportExceptionInterface::class.' expected');
-        } catch (TransportExceptionInterface $e) {
+        } catch (TransportExceptionInterface) {
             $this->addToAssertionCount(1);
         }
 
         try {
             $response->getStatusCode();
             $this->fail(TransportExceptionInterface::class.' still expected');
-        } catch (TransportExceptionInterface $e) {
+        } catch (TransportExceptionInterface) {
             $this->addToAssertionCount(1);
         }
 
@@ -284,7 +283,7 @@ abstract class HttpClientTestCase extends TestCase
             foreach ($client->stream($response) as $r => $chunk) {
             }
             $this->fail(TransportExceptionInterface::class.' expected');
-        } catch (TransportExceptionInterface $e) {
+        } catch (TransportExceptionInterface) {
             $this->addToAssertionCount(1);
         }
 
@@ -438,7 +437,7 @@ abstract class HttpClientTestCase extends TestCase
         try {
             $response->getHeaders();
             $this->fail(RedirectionExceptionInterface::class.' expected');
-        } catch (RedirectionExceptionInterface $e) {
+        } catch (RedirectionExceptionInterface) {
         }
 
         $this->assertSame(302, $response->getStatusCode());
@@ -746,9 +745,35 @@ abstract class HttpClientTestCase extends TestCase
         $response->getHeaders();
     }
 
-    public function testTimeoutOnStream()
+    public function testTimeoutIsNotAFatalError()
     {
         usleep(300000); // wait for the previous test to release the server
+        $client = $this->getHttpClient(__FUNCTION__);
+        $response = $client->request('GET', 'http://localhost:8057/timeout-body', [
+            'timeout' => 0.25,
+        ]);
+
+        try {
+            $response->getContent();
+            $this->fail(TimeoutExceptionInterface::class.' expected');
+        } catch (TimeoutExceptionInterface $e) {
+        }
+
+        for ($i = 0; $i < 10; ++$i) {
+            try {
+                $this->assertSame('<1><2>', $response->getContent());
+                break;
+            } catch (TimeoutExceptionInterface $e) {
+            }
+        }
+
+        if (10 === $i) {
+            throw $e;
+        }
+    }
+
+    public function testTimeoutOnStream()
+    {
         $client = $this->getHttpClient(__FUNCTION__);
         $response = $client->request('GET', 'http://localhost:8057/timeout-body');
 
@@ -834,7 +859,7 @@ abstract class HttpClientTestCase extends TestCase
                 try {
                     $response->getContent();
                     $this->fail(TransportExceptionInterface::class.' expected');
-                } catch (TransportExceptionInterface $e) {
+                } catch (TransportExceptionInterface) {
                 }
             }
             $responses = [];
@@ -867,7 +892,7 @@ abstract class HttpClientTestCase extends TestCase
                 try {
                     unset($response);
                     $this->fail(TransportExceptionInterface::class.' expected');
-                } catch (TransportExceptionInterface $e) {
+                } catch (TransportExceptionInterface) {
                 }
             }
 
@@ -1085,12 +1110,24 @@ abstract class HttpClientTestCase extends TestCase
 
         try {
             $response->getContent();
-        } catch (TransportExceptionInterface $e) {
+        } catch (TransportExceptionInterface) {
             $this->addToAssertionCount(1);
         }
 
         $duration = microtime(true) - $start;
 
         $this->assertLessThan(10, $duration);
+    }
+
+    public function testWithOptions()
+    {
+        $client = $this->getHttpClient(__FUNCTION__);
+        $client2 = $client->withOptions(['base_uri' => 'http://localhost:8057/']);
+
+        $this->assertNotSame($client, $client2);
+        $this->assertSame($client::class, $client2::class);
+
+        $response = $client2->request('GET', '/');
+        $this->assertSame(200, $response->getStatusCode());
     }
 }

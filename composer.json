@@ -1,10 +1,10 @@
 {
-    "config": {
-        "platform": {
-            "php": "7.2"
-        }
-    },
     "require": {
         "sentry/sdk": "^3.3"
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
     }
 }

@@ -25,11 +25,9 @@ class StreamWrapper
     /** @var resource|null */
     public $context;
 
-    /** @var HttpClientInterface */
-    private $client;
+    private HttpClientInterface|ResponseInterface $client;
 
-    /** @var ResponseInterface */
-    private $response;
+    private ResponseInterface $response;
 
     /** @var resource|string|null */
     private $content;
@@ -37,10 +35,10 @@ class StreamWrapper
     /** @var resource|null */
     private $handle;
 
-    private $blocking = true;
-    private $timeout;
-    private $eof = false;
-    private $offset = 0;
+    private bool $blocking = true;
+    private ?float $timeout = null;
+    private bool $eof = false;
+    private ?int $offset = 0;
 
     /**
      * Creates a PHP stream resource from a ResponseInterface.
@@ -49,6 +47,14 @@ class StreamWrapper
      */
     public static function createResource(ResponseInterface $response, HttpClientInterface $client = null)
     {
+        if ($response instanceof StreamableInterface) {
+            $stack = debug_backtrace(\DEBUG_BACKTRACE_PROVIDE_OBJECT | \DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+
+            if ($response !== ($stack[1]['object'] ?? null)) {
+                return $response->toStream(false);
+            }
+        }
+
         if (null === $client && !method_exists($response, 'stream')) {
             throw new \InvalidArgumentException(sprintf('Providing a client to "%s()" is required when the response doesn\'t have any "stream()" method.', __CLASS__));
         }
@@ -73,9 +79,9 @@ class StreamWrapper
     }
 
     /**
-     * @param resource|null $handle  The resource handle that should be monitored when
-     *                               stream_select() is used on the created stream
-     * @param resource|null $content The seekable resource where the response body is buffered
+     * @param resource|callable|null $handle  The resource handle that should be monitored when
+     *                                        stream_select() is used on the created stream
+     * @param resource|null          $content The seekable resource where the response body is buffered
      */
     public function bindHandles(&$handle, &$content): void
     {
@@ -110,7 +116,7 @@ class StreamWrapper
         return false;
     }
 
-    public function stream_read(int $count)
+    public function stream_read(int $count): string|false
     {
         if (\is_resource($this->content)) {
             // Empty the internal activity list
@@ -168,9 +174,7 @@ class StreamWrapper
 
                 if ('' !== $data = $chunk->getContent()) {
                     if (\strlen($data) > $count) {
-                        if (null === $this->content) {
-                            $this->content = substr($data, $count);
-                        }
+                        $this->content ??= substr($data, $count);
                         $data = substr($data, 0, $count);
                     }
                     $this->offset += \strlen($data);
@@ -267,7 +271,7 @@ class StreamWrapper
         if (\STREAM_CAST_FOR_SELECT === $castAs) {
             $this->response->getHeaders(false);
 
-            return $this->handle ?? false;
+            return (\is_callable($this->handle) ? ($this->handle)() : $this->handle) ?? false;
         }
 
         return false;

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<libraries>
+    <library>
+        <location>vendor</location>
+        <name>Sentry SDK</name>
+        <version>3.3</version>
+        <license>Apache</license>
+        <licenseversion>2.0</licenseversion>
+    </library>
+</libraries>

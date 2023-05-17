@@ -1,6 +1,282 @@
 # CHANGELOG
 
-## Unreleased
+## 3.18.2
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry PHP SDK v3.18.2.
+
+### Bug Fixes
+
+- Require php-http/message-factory [(#1534)](https://github.com/getsentry/sentry-php/pull/1534)
+
+## 3.18.1
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry PHP SDK v3.18.1.
+
+### Bug Fixes
+
+- Guard against empty profiles [(#1528)](https://github.com/getsentry/sentry-php/pull/1528)
+- Ignore empty context values [(#1529)](https://github.com/getsentry/sentry-php/pull/1529)
+
+## 3.18.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry PHP SDK v3.18.0.
+
+### Features
+
+- Add `TransactionContext::fromEnvironment` [(#1519)](https://github.com/getsentry/sentry-php/pull/1519)
+
+### Misc
+
+- Sent all events to the `/envelope` endpoint if tracing is enabled [(#1518)](https://github.com/getsentry/sentry-php/pull/1518)
+- Attach the Dynamic Sampling Context to error events [(#1522)](https://github.com/getsentry/sentry-php/pull/1522)
+
+## 3.17.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry PHP SDK v3.17.0.
+
+### Features
+
+- Add `ignore_exceptions` & `ignore_transactions` options [(#1503)](https://github.com/getsentry/sentry-php/pull/1503)
+  
+  We deprecated the [IgnoreErrorsIntegration](https://docs.sentry.io/platforms/php/integrations/#ignoreerrorsintegration) in favor of this new option.
+  The option will also take [previous exceptions](https://www.php.net/manual/en/exception.getprevious.php) into account.
+
+  ```php
+  \Sentry\init([
+    'ignore_exceptions' => [BadThingsHappenedException::class],
+  ]);
+  ```
+
+  To ignore a transaction being sent to Sentry, add its name to the config option.
+  You can find the transaction name on the [Performance page](https://sentry.io/performance/).
+
+  ```php
+  \Sentry\init([
+      'ignore_transactions' => ['GET /health'],
+  ]);
+  ```
+
+### Misc
+
+ - Bump `php-http/discovery` to `^1.15` [(#1504)](https://github.com/getsentry/sentry-php/pull/1504)
+
+   You may need to allow the added composer plugin, introduced in `php-http/discovery v1.15.0`, to execute when running `composer update`.
+   We previously pinned this package to version `<1.15`.
+   Due to conflicts with other packages, we decided to lift this restriction.
+
+## 3.16.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry PHP SDK v3.16.0.
+This release adds initial support for [Cron Monitoring](https://docs.sentry.io/product/crons/).
+
+> **Warning**
+> Cron Monitoring is currently in beta. Beta features are still in-progress and may have bugs. We recognize the irony.
+> If you have any questions or feedback, please email us at crons-feedback@sentry.io, reach out via Discord (#cronjobs), or open an issue.
+
+### Features
+
+- Add inital support for Cron Monitoring [(#1467)](https://github.com/getsentry/sentry-php/pull/1467)
+  
+  You can use Cron Monitoring to monitor your cron jobs. No pun intended.
+
+  Add the code below to your application or script that is invoked by your cron job.
+  The first Check-In will let Sentry know that your job started, with the second Check-In reporting the outcome.
+
+  ```php
+  <?php
+
+  $checkIn = new CheckIn(
+      monitorSlug: '<your-monitor-slug>',
+      status: CheckInStatus::inProgress(),
+  );
+
+  $event = Event::createCheckIn();
+  $event->setCheckIn($checkIn);
+
+  $this->hub->captureEvent($event);
+
+  try {
+
+      // do stuff
+
+      $checkIn->setStatus(CheckInStatus::ok());
+  } catch (Throwable $e) {
+      $checkIn->setStatus(CheckInStatus::error());
+  }
+
+  $event = Event::createCheckIn();
+  $event->setCheckIn($checkIn);
+
+  $this->hub->captureEvent($event);
+  ```
+
+  If you only want to check if a cron did run, you may create a "Heartbeat" instead.
+  Add the code below to your application or script that is invoked by your cron job.
+  
+
+  ```php
+  <?php
+
+  // do stuff
+
+  $checkIn = new CheckIn(
+      monitorSlug: '<your-monitor-slug>',
+      status: CheckInStatus::ok(), // or - CheckInStatus::error()
+      duration: 10, // optional - duration in seconds
+  );
+
+  $event = Event::createCheckIn();
+  $event->setCheckIn($checkIn);
+
+  $this->hub->captureEvent($event);
+  ```
+
+- Introduce a new `trace` helper function [(#1490)](https://github.com/getsentry/sentry-php/pull/1490)
+
+  We made it a tad easier to add custom tracing spans to your application.
+
+  ```php
+  $spanContext = new SpanContext();
+  $spanContext->setOp('function');
+  $spanContext->setDescription('Soemthing to be traced');
+
+  trace(
+      function (Scope $scope) {
+          // something to be traced
+      },
+      $spanContext,
+  );
+  ```
+
+## 3.15.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry PHP SDK v3.15.0.
+This release adds initial support for [Profiling](https://docs.sentry.io/product/profiling/).
+
+> **Warning**
+> Profiling is currently in beta. Beta features are still in-progress and may have bugs. We recognize the irony.
+> If you have any questions or feedback, please email us at profiling@sentry.io, reach out via Discord (#profiling), or open an issue.
+
+Profiling is only available on Sentry SaaS (sentry.io). Support for Sentry self-hosted is planned once Profiling is released into GA.
+
+### Features
+
+- Add initial support for profiling [(#1477)](https://github.com/getsentry/sentry-php/pull/1477)
+
+  Under the hood, we're using Wikipedia's sampling profiler [Excimer](https://github.com/wikimedia/mediawiki-php-excimer).
+  We chose this profiler for its low overhead and for being used in production by one of the largest PHP-powered websites in the world.
+
+  Excimer works with PHP 7.2 and up, for PHP 8.2 support, make sure to use Excimer version 1.1.0.
+
+  There is currently no support for either Windows or macOS.
+
+  You can install Excimer via your operating systems package manager.
+
+  ```bash
+  apt-get install php-excimer
+  ```
+
+  If no suitable version is available, you may build Excimer from source.
+
+  ```bash
+  git clone https://github.com/wikimedia/mediawiki-php-excimer.git
+
+  cd excimer/
+  phpize && ./configure && make && sudo make install
+  ```
+
+  Depending on your environment, you may need to enable the Excimer extension afterward.
+
+  ```bash
+  phpenmod -s fpm excimer
+  # or
+  phpenmod -s apache2 excimer
+  ```
+
+  Once the extension is installed, you may enable profiling by adding the new `profiles_sample_rate` config option to your `Sentry::init` method.
+
+  ```php
+  \Sentry\init([
+      'dsn' => '__DSN__',
+      'traces_sample_rate' => 1.0,
+      'profiles_sample_rate' => 1.0,
+  ]);
+  ```
+
+  Profiles are being sampled in relation to your `traces_sample_rate`.
+
+  Please note that the profiler is started inside transactions only. If you're not using our [Laravel](https://github.com/getsentry/sentry-laravel) or [Symfony](https://github.com/getsentry/sentry-symfony) SDKs, you may need to manually add transactions to your application as described [here](https://docs.sentry.io/platforms/php/performance/instrumentation/custom-instrumentation/).
+
+  #### Other things you should consider:
+
+  - The current sample rate of the profiler is set to 101Hz (every ~10ms). A minimum of two samples is required for a profile being sent, hence requests that finish in less than ~20ms won't hail any profiles.
+  - The maximum duration of a profile is 30s, hence we do not recommend enabling the extension in an CLI environment.
+  - By design, the profiler will take samples at the end of any userland functions. You may see long sample durations on tasks like HTTP client requests and DB queries.
+    You can read more about Excimer's architecture [here](https://techblog.wikimedia.org/2021/03/03/profiling-php-in-production-at-scale/).
+
+## 3.14.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry PHP SDK v3.14.0.
+
+### Features
+
+- Add a new `enable_tracing: true/false` option, an alternative for `traces_sample_rate: 1.0/null` [(#1458)](https://github.com/getsentry/sentry-php/pull/1458)
+
+### Bug Fixes
+
+- Fix missing keys in the request body [(#1470)](https://github.com/getsentry/sentry-php/pull/1470)
+- Add support for partial JSON encoding [(#1481)](https://github.com/getsentry/sentry-php/pull/1481)
+- Prevent calling *magic methods* when retrieving the ID from an object [(#1483)](https://github.com/getsentry/sentry-php/pull/1483)
+- Only serialize scalar object IDs [(#1485)](https://github.com/getsentry/sentry-php/pull/1485)
+
+### Misc
+
+- The SDK is now licensed under MIT [(#1471)](https://github.com/getsentry/sentry-php/pull/1471)
+  - Read more about Sentry's licensing [here](https://open.sentry.io/licensing/).
+- Deprecate `Client::__construct` `$serializer` argument. It is currently un-used [(#1482)](https://github.com/getsentry/sentry-php/pull/1482)
+
+## 3.13.1
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry PHP SDK v3.13.1.
+
+### Bug Fixes
+
+- Sanatize HTTP client spans & breadcrumbs [(#1453)](https://github.com/getsentry/sentry-php/pull/1453)
+- Pin php-http/discovery to `< 1.15` to disable some unwanted side-effect introduced in this new minor version [(#1464)](https://github.com/getsentry/sentry-php/pull/1464)
+
+## 3.13.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry PHP SDK v3.13.0.
+
+### Features
+
+- Object IDs are now automatically serialized as part of a stack trace frame [(#1443)](https://github.com/getsentry/sentry-php/pull/1443)
+  - If `Obj::getID()` or `Obj->id` is accessible, this value will be displayed inside the stack trace frame on the issue details page.
+    To attach local variables to your stack trace, make sure `zend.exception_ignore_arg: 0` is set in your `php.ini`.
+    See https://docs.sentry.io/platforms/php/troubleshooting/#missing-variables-in-stack-traces
+
+- Add more functionality to the `ExceptionMechanism::class` [(#1450)](https://github.com/getsentry/sentry-php/pull/1450)
+  - Attach arbitrary data
+    ```php
+    $hint = EventHint::fromArray([
+        'exception' => $exception,
+        'mechanism' => new ExceptionMechanism(
+            ExceptionMechanism::TYPE_GENERIC,
+            false,
+            [
+                'key' => 'value',
+                //...
+            ],
+        ),
+    ]);
+    captureEvent(Event::createEvent(), $hint);
+    ```
+    Learn more about the interface of the `ExceptionMechanism` on https://develop.sentry.dev/sdk/event-payloads/exception/#exception-mechanism
+  - Access or mutate `ExceptionMechanism::data` via `ExceptionMechanism::getData()` and `ExceptionMechanism::setData()`
+  - If an exception contains a user-provided `code`, the value will be serialized into the event and displayed on the issues details page.
+    ```php
+    throw new \Exception('Oh no!', 123);
+    ```
 
 ## 3.12.1 (2023-01-12)
 

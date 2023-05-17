@@ -10,6 +10,7 @@ use Sentry\EventType;
 use Sentry\ExceptionDataBag;
 use Sentry\Frame;
 use Sentry\Options;
+use Sentry\Profiling\Profile;
 use Sentry\Tracing\DynamicSamplingContext;
 use Sentry\Tracing\Span;
 use Sentry\Tracing\TransactionMetadata;
@@ -39,6 +40,24 @@ final class PayloadSerializer implements PayloadSerializerInterface
     public function serialize(Event $event): string
     {
         if (EventType::transaction() === $event->getType()) {
+            $transactionEnvelope = $this->serializeAsEnvelope($event);
+
+            // Attach a new envelope item containing the profile data
+            if (null !== $event->getSdkMetadata('profile')) {
+                $profileEnvelope = $this->seralizeProfileAsEnvelope($event);
+                if (null !== $profileEnvelope) {
+                    return sprintf("%s\n%s", $transactionEnvelope, $profileEnvelope);
+                }
+            }
+
+            return $transactionEnvelope;
+        }
+
+        if (EventType::checkIn() === $event->getType()) {
+            return $this->serializeAsEnvelope($event);
+        }
+
+        if ($this->options->isTracingEnabled()) {
             return $this->serializeAsEnvelope($event);
         }
 
@@ -48,6 +67,25 @@ final class PayloadSerializer implements PayloadSerializerInterface
     private function serializeAsEvent(Event $event): string
     {
         $result = $this->toArray($event);
+
+        return JSON::encode($result);
+    }
+
+    private function serializeAsCheckInEvent(Event $event): string
+    {
+        $result = [];
+
+        $checkIn = $event->getCheckIn();
+        if (null !== $checkIn) {
+            $result = [
+                'check_in_id' => $checkIn->getId(),
+                'monitor_slug' => $checkIn->getMonitorSlug(),
+                'status' => (string) $checkIn->getStatus(),
+                'duration' => $checkIn->getDuration(),
+                'release' => $checkIn->getRelease(),
+                'environment' => $checkIn->getEnvironment(),
+            ];
+        }
 
         return JSON::encode($result);
     }
@@ -220,7 +258,33 @@ final class PayloadSerializer implements PayloadSerializerInterface
             'content_type' => 'application/json',
         ];
 
-        return sprintf("%s\n%s\n%s", JSON::encode($envelopeHeader), JSON::encode($itemHeader), $this->serializeAsEvent($event));
+        if (EventType::checkIn() === $event->getType()) {
+            $seralizedEvent = $this->serializeAsCheckInEvent($event);
+        } else {
+            $seralizedEvent = $this->serializeAsEvent($event);
+        }
+
+        return sprintf("%s\n%s\n%s", JSON::encode($envelopeHeader), JSON::encode($itemHeader), $seralizedEvent);
+    }
+
+    private function seralizeProfileAsEnvelope(Event $event): ?string
+    {
+        $itemHeader = [
+            'type' => 'profile',
+            'content_type' => 'application/json',
+        ];
+
+        $profile = $event->getSdkMetadata('profile');
+        if (!$profile instanceof Profile) {
+            return null;
+        }
+
+        $profileData = $profile->getFormattedData($event);
+        if (null === $profileData) {
+            return null;
+        }
+
+        return sprintf("%s\n%s", JSON::encode($itemHeader), JSON::encode($profileData));
     }
 
     /**
@@ -266,7 +330,8 @@ final class PayloadSerializer implements PayloadSerializerInterface
      *     },
      *     mechanism?: array{
      *         type: string,
-     *         handled: boolean
+     *         handled: boolean,
+     *         data?: array<string, mixed>
      *     }
      * }
      */
@@ -290,6 +355,10 @@ final class PayloadSerializer implements PayloadSerializerInterface
                 'type' => $exceptionMechanism->getType(),
                 'handled' => $exceptionMechanism->isHandled(),
             ];
+
+            if ([] !== $exceptionMechanism->getData()) {
+                $result['mechanism']['data'] = $exceptionMechanism->getData();
+            }
         }
 
         return $result;

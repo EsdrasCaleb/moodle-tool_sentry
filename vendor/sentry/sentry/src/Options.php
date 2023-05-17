@@ -56,6 +56,10 @@ final class Options
         $this->configureOptions($this->resolver);
 
         $this->options = $this->resolver->resolve($options);
+
+        if (true === $this->options['enable_tracing'] && null === $this->options['traces_sample_rate']) {
+            $this->options = array_merge($this->options, ['traces_sample_rate' => 1]);
+        }
     }
 
     /**
@@ -144,6 +148,29 @@ final class Options
     }
 
     /**
+     * Sets if tracing should be enabled or not. If null tracesSampleRate takes
+     * precedence.
+     *
+     * @param bool|null $enableTracing Boolean if tracing should be enabled or not
+     */
+    public function setEnableTracing(?bool $enableTracing): void
+    {
+        $options = array_merge($this->options, ['enable_tracing' => $enableTracing]);
+
+        $this->options = $this->resolver->resolve($options);
+    }
+
+    /**
+     * Gets if tracing is enabled or not.
+     *
+     * @return bool|null If the option `enable_tracing` is set or not
+     */
+    public function getEnableTracing(): ?bool
+    {
+        return $this->options['enable_tracing'];
+    }
+
+    /**
      * Sets the sampling factor to apply to transactions. A value of 0 will deny
      * sending any transactions, and a value of 1 will send 100% of transactions.
      *
@@ -156,13 +183,32 @@ final class Options
         $this->options = $this->resolver->resolve($options);
     }
 
+    public function getProfilesSampleRate(): ?float
+    {
+        /** @var int|float|null $value */
+        $value = $this->options['profiles_sample_rate'] ?? null;
+
+        return $value ?? null;
+    }
+
+    public function setProfilesSampleRate(?float $sampleRate): void
+    {
+        $options = array_merge($this->options, ['profiles_sample_rate' => $sampleRate]);
+
+        $this->options = $this->resolver->resolve($options);
+    }
+
     /**
      * Gets whether tracing is enabled or not. The feature is enabled when at
      * least one of the `traces_sample_rate` and `traces_sampler` options is
-     * set.
+     * set and `enable_tracing` is set and not false.
      */
     public function isTracingEnabled(): bool
     {
+        if (null !== $this->getEnableTracing() && false === $this->getEnableTracing()) {
+            return false;
+        }
+
         return null !== $this->getTracesSampleRate() || null !== $this->getTracesSampler();
     }
 
@@ -366,6 +412,50 @@ final class Options
     public function setServerName(string $serverName): void
     {
         $options = array_merge($this->options, ['server_name' => $serverName]);
+
+        $this->options = $this->resolver->resolve($options);
+    }
+
+    /**
+     * Gets a list of exceptions to be ignored and not sent to Sentry.
+     *
+     * @return string[]
+     */
+    public function getIgnoreExceptions(): array
+    {
+        return $this->options['ignore_exceptions'];
+    }
+
+    /**
+     * Sets a list of exceptions to be ignored and not sent to Sentry.
+     *
+     * @param string[] $ignoreErrors The list of exceptions to be ignored
+     */
+    public function setIgnoreExceptions(array $ignoreErrors): void
+    {
+        $options = array_merge($this->options, ['ignore_exceptions' => $ignoreErrors]);
+
+        $this->options = $this->resolver->resolve($options);
+    }
+
+    /**
+     * Gets a list of transaction names to be ignored and not sent to Sentry.
+     *
+     * @return string[]
+     */
+    public function getIgnoreTransactions(): array
+    {
+        return $this->options['ignore_transactions'];
+    }
+
+    /**
+     * Sets a list of transaction names to be ignored and not sent to Sentry.
+     *
+     * @param string[] $ignoreTransaction The list of transaction names to be ignored
+     */
+    public function setIgnoreTransactions(array $ignoreTransaction): void
+    {
+        $options = array_merge($this->options, ['ignore_transactions' => $ignoreTransaction]);
 
         $this->options = $this->resolver->resolve($options);
     }
@@ -814,8 +904,10 @@ final class Options
             'send_attempts' => 0,
             'prefixes' => array_filter(explode(\PATH_SEPARATOR, get_include_path() ?: '')),
             'sample_rate' => 1,
+            'enable_tracing' => null,
             'traces_sample_rate' => null,
             'traces_sampler' => null,
+            'profiles_sample_rate' => null,
             'attach_stacktrace' => false,
             'context_lines' => 5,
             'enable_compression' => true,
@@ -824,6 +916,8 @@ final class Options
             'release' => $_SERVER['SENTRY_RELEASE'] ?? null,
             'dsn' => $_SERVER['SENTRY_DSN'] ?? null,
             'server_name' => gethostname(),
+            'ignore_exceptions' => [],
+            'ignore_transactions' => [],
             'before_send' => static function (Event $event): Event {
                 return $event;
             },
@@ -852,8 +946,10 @@ final class Options
         $resolver->setAllowedTypes('send_attempts', 'int');
         $resolver->setAllowedTypes('prefixes', 'string[]');
         $resolver->setAllowedTypes('sample_rate', ['int', 'float']);
+        $resolver->setAllowedTypes('enable_tracing', ['null', 'bool']);
         $resolver->setAllowedTypes('traces_sample_rate', ['null', 'int', 'float']);
         $resolver->setAllowedTypes('traces_sampler', ['null', 'callable']);
+        $resolver->setAllowedTypes('profiles_sample_rate', ['null', 'int', 'float']);
         $resolver->setAllowedTypes('attach_stacktrace', 'bool');
         $resolver->setAllowedTypes('context_lines', ['null', 'int']);
         $resolver->setAllowedTypes('enable_compression', 'bool');
@@ -866,6 +962,8 @@ final class Options
         $resolver->setAllowedTypes('server_name', 'string');
         $resolver->setAllowedTypes('before_send', ['callable']);
         $resolver->setAllowedTypes('before_send_transaction', ['callable']);
+        $resolver->setAllowedTypes('ignore_exceptions', 'string[]');
+        $resolver->setAllowedTypes('ignore_transactions', 'string[]');
         $resolver->setAllowedTypes('trace_propagation_targets', 'string[]');
         $resolver->setAllowedTypes('tags', 'string[]');
         $resolver->setAllowedTypes('error_types', ['null', 'int']);
