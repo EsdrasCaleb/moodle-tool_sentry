@@ -17,7 +17,7 @@
 /**
  * Provides conection with sentry.io to track errors in your moodle site using sentry
  *
- * @package    tool
+ * @package    tool_sentry
  * @subpackage sentry
  * @copyright  2023 Esdras Caleb
  * @author     Esdras Caleb <esdrascaleb@gmail.com>
@@ -27,7 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Plugin version.
-$plugin->version = 2023041605;
+$plugin->version = 2023051705;
 
 // Required Moodle version.
 $plugin->requires  = 2013050100; // Requires this Moodle version - at least 2.0.
