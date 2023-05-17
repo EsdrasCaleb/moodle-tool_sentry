@@ -30,7 +30,7 @@ global $CFG;
 if (is_siteadmin()) {
     if (!$ADMIN->locate('tool_sentry')) {
         $page = new admin_settingpage('sentryconfig', get_string('pluginsettigs', 'tool_sentry'));
-        $page->add(new admin_setting_configtext('tool_sentry/dns', get_string('dns', 'tool_sentry') , 
+        $page->add(new admin_setting_configtext('tool_sentry/dns', get_string('dns', 'tool_sentry'),
             '', 'https://USERCODE@CLIENTCODE.ingest.sentry.io/CLIENTCODE'));
         $ADMIN->add('tools', $page);
 
