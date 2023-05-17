@@ -35,7 +35,7 @@ $plugin->requires  = 2013050100; // Requires this Moodle version - at least 2.0.
 $plugin->component = 'tool_sentry';
 
 // Software maturity level.
-$plugin->maturity = MATURITY_BETA;
+$plugin->maturity = MATURITY_RC;
 
 // User-friendly version number.
-$plugin->release = '0.0.0.2';
+$plugin->release = '1';
