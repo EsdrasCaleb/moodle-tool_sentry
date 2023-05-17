@@ -16,9 +16,8 @@
 /**
  * Privacy provider.
  *
- * @package   local_aws
- * @author    Ilya Tregubov (ilyatregubov@catalyst-au.net)
- * @copyright 2018 Catalyst IT
+ * @package   tool_sentry
+ * @author    Esdras Caleb
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
