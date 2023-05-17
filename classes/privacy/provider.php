@@ -18,11 +18,17 @@
  *
  * @package   tool_sentry
  * @author    Esdras Caleb
+ * @copyright  2023 Esdras Caleb
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace tool_sentry\privacy;
-
+/**
+ * Class provider to provide info of data shared
+ * @author    Esdras Caleb
+ * @copyright  2023 Esdras Caleb
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class provider implements
     // This plugin does not store any personal user data.
     \core_privacy\local\metadata\null_provider {

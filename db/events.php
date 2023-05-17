@@ -18,6 +18,7 @@
  *
  * @package   tool_sentry
  * @author    Esdras Caleb
+ * @copyright  2023 Esdras Caleb
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
