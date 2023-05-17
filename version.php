@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information
+ * Provides conection with sentry.io to track errors in your moodle site using sentry
  *
  * @package    tool
  * @subpackage sentry
