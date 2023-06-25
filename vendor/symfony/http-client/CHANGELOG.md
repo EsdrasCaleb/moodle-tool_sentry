@@ -1,19 +1,6 @@
 CHANGELOG
 =========
 
-6.2
----
-
- * Make `HttplugClient` implement `Psr\Http\Message\RequestFactoryInterface`, `StreamFactoryInterface` and `UriFactoryInterface`
- * Deprecate implementing `Http\Message\RequestFactory`, `StreamFactory` and `UriFactory` on `HttplugClient`
- * Add `withOptions()` to `HttplugClient` and `Psr18Client`
-
-6.1
----
-
- * Allow yielding `Exception` from MockResponse's `$body` to mock transport errors
- * Remove credentials from requests redirected to same host but different port
-
 5.4
 ---
 

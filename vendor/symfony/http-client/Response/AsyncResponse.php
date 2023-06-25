@@ -34,9 +34,9 @@ final class AsyncResponse implements ResponseInterface, StreamableInterface
     private const FIRST_CHUNK_YIELDED = 1;
     private const LAST_CHUNK_YIELDED = 2;
 
-    private ?HttpClientInterface $client;
-    private ResponseInterface $response;
-    private array $info = ['canceled' => false];
+    private $client;
+    private $response;
+    private $info = ['canceled' => false];
     private $passthru;
     private $stream;
     private $yieldedState;
@@ -114,7 +114,7 @@ final class AsyncResponse implements ResponseInterface, StreamableInterface
         return $headers;
     }
 
-    public function getInfo(string $type = null): mixed
+    public function getInfo(string $type = null)
     {
         if (null !== $type) {
             return $this->info[$type] ?? $this->response->getInfo($type);
@@ -123,6 +123,9 @@ final class AsyncResponse implements ResponseInterface, StreamableInterface
         return $this->info + $this->response->getInfo();
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function toStream(bool $throw = true)
     {
         if ($throw) {
@@ -143,6 +146,9 @@ final class AsyncResponse implements ResponseInterface, StreamableInterface
         return $stream;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function cancel(): void
     {
         if ($this->info['canceled']) {
@@ -165,7 +171,7 @@ final class AsyncResponse implements ResponseInterface, StreamableInterface
             }
 
             $this->passthru = null;
-        } catch (ExceptionInterface) {
+        } catch (ExceptionInterface $e) {
             // ignore any errors when canceling
         }
     }
@@ -190,7 +196,7 @@ final class AsyncResponse implements ResponseInterface, StreamableInterface
                 foreach (self::passthru($this->client, $this, new LastChunk()) as $chunk) {
                     // no-op
                 }
-            } catch (ExceptionInterface) {
+            } catch (ExceptionInterface $e) {
                 // ignore any errors when destructing
             }
         }

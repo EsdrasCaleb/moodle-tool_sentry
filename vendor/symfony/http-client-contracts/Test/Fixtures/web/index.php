@@ -15,7 +15,7 @@ if (!$_POST) {
 foreach ($_SERVER as $k => $v) {
     switch ($k) {
         default:
-            if (!str_starts_with($k, 'HTTP_')) {
+            if (0 !== strpos($k, 'HTTP_')) {
                 continue 2;
             }
             // no break

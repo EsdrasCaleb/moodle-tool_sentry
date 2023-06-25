@@ -45,15 +45,19 @@ final class NoPrivateNetworkHttpClient implements HttpClientInterface, LoggerAwa
         '::/128',
     ];
 
-    private HttpClientInterface $client;
-    private string|array|null $subnets;
+    private $client;
+    private $subnets;
 
     /**
      * @param string|array|null $subnets String or array of subnets using CIDR notation that will be used by IpUtils.
      *                                   If null is passed, the standard private subnets will be used.
      */
-    public function __construct(HttpClientInterface $client, string|array $subnets = null)
+    public function __construct(HttpClientInterface $client, $subnets = null)
     {
+        if (!(\is_array($subnets) || \is_string($subnets) || null === $subnets)) {
+            throw new \TypeError(sprintf('Argument 2 passed to "%s()" must be of the type array, string or null. "%s" given.', __METHOD__, get_debug_type($subnets)));
+        }
+
         if (!class_exists(IpUtils::class)) {
             throw new \LogicException(sprintf('You cannot use "%s" if the HttpFoundation component is not installed. Try running "composer require symfony/http-foundation".', __CLASS__));
         }
@@ -62,6 +66,9 @@ final class NoPrivateNetworkHttpClient implements HttpClientInterface, LoggerAwa
         $this->subnets = $subnets;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function request(string $method, string $url, array $options = []): ResponseInterface
     {
         $onProgress = $options['on_progress'] ?? null;
@@ -87,11 +94,17 @@ final class NoPrivateNetworkHttpClient implements HttpClientInterface, LoggerAwa
         return $this->client->request($method, $url, $options);
     }
 
-    public function stream(ResponseInterface|iterable $responses, float $timeout = null): ResponseStreamInterface
+    /**
+     * {@inheritdoc}
+     */
+    public function stream($responses, float $timeout = null): ResponseStreamInterface
     {
         return $this->client->stream($responses, $timeout);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function setLogger(LoggerInterface $logger): void
     {
         if ($this->client instanceof LoggerAwareInterface) {
@@ -99,7 +112,10 @@ final class NoPrivateNetworkHttpClient implements HttpClientInterface, LoggerAwa
         }
     }
 
-    public function withOptions(array $options): static
+    /**
+     * {@inheritdoc}
+     */
+    public function withOptions(array $options): self
     {
         $clone = clone $this;
         $clone->client = $this->client->withOptions($options);
