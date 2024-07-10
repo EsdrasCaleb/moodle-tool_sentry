@@ -60,9 +60,6 @@ class helper {
     public static function geterros(\core\event\base $event) {
         $config = get_config('tool_sentry');
         if ($config->activate) {
-            \Sentry\configureScope(function (\Sentry\State\Scope $scope,$event){
-                $scope->setUser(['id' => $event->userid]);
-            });
             \Sentry\captureLastError();
         }
     }

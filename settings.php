@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die;
 
 global $CFG, $ADMIN;
-
+\tool_sentry\helper::init();
 if (is_siteadmin()) {
     if (!$ADMIN->locate('tool_sentry')) {
         $page = new admin_settingpage('sentryconfig', get_string('pluginsettigs', 'tool_sentry'));

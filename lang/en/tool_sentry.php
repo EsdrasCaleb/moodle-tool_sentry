@@ -32,6 +32,7 @@ $string['sentry_options_desc'] = "This Change the way the options are sent to se
 $string['activate'] = "Activate Sentry Plugin";
 $string['activate_desc'] = "Activate Sentry to send information to the configured dns";
 $string['dns'] = "Sentry Server DNS";
+$string['dns_desc'] = "Sentry server address with auth token";
 $string['privacy:metadata'] = 'The  plugin does not store any personal data. However, it send the IP of a user that had an error to the sentry server configured in it.';
 $string['release'] = "Sentry Release";
 $string['release_desc'] = "Sets the release. If not set, the SDK will try to automatically configure a release out of the box but it's a better idea to manually set it to guarantee that the release is in sync with your deploy integrations.";
