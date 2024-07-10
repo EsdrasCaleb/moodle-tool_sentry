@@ -25,18 +25,18 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$observers = array();
+$observers = [];
 
-$observers[] = array(
+$observers[] = [
     'eventname' => 'core\event\base',
     'callback' => '\tool_sentry\helper::init',
     'internal' => true,
     'priority'    => 9999,
-);
+];
 
-$observers[] = array(
+$observers[] = [
     'eventname' => 'core\event\base',
     'callback' => '\tool_sentry\helper::geterros',
     'internal' => true,
     'priority'    => 0,
-);
+];
