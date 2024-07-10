@@ -27,3 +27,8 @@ $string['pluginname'] = 'Sentry report tool';
 $string['pluginsettigs'] = "Sentry Configuration";
 $string['dns'] = "Sentry Server DNS";
 $string['privacy:metadata'] = 'The  plugin does not store any personal data. However, it send the IP of a user that had an error to the sentry server configured in it.';
+$string['never'] = "Request bodies are never sent.";
+$string['small'] = "Only small request bodies will be captured (typically 4KB)";
+$string['medium'] = "Medium and small requests will be captured (typically 10KB)";
+$string['always'] = "The SDK will always capture the request body as long as Sentry can make sense of it.";
+
