@@ -33,7 +33,7 @@ if (is_siteadmin()) {
         $page->add(new admin_setting_heading('tool_sentry/options', get_string('options', 'tool_sentry'),
             get_string('options_desc', 'tool_sentry')));
         $page->add(new admin_setting_configcheckbox('tool_sentry/activate',
-            get_string('activate', 'tool_sentry'),get_string('activate_desc', 'tool_sentry'),1));
+            get_string('activate', 'tool_sentry'), get_string('activate_desc', 'tool_sentry'), 1));
         $page->add(new admin_setting_configtext('tool_sentry/dns', get_string('dns', 'tool_sentry'),
             get_string('dns_desc', 'tool_sentry'), 'https://USERCODE@CLIENTCODE.ingest.sentry.io/CLIENTCODE'));
         $page->add(new admin_setting_heading('tool_sentry/sentry_options',
@@ -41,40 +41,43 @@ if (is_siteadmin()) {
         $page->add(new admin_setting_configtext('tool_sentry/release', get_string('release', 'tool_sentry'),
             get_string('release_desc', 'tool_sentry'), ''));
         $page->add(new admin_setting_configcheckbox('tool_sentry/activate',
-            get_string('activate', 'tool_sentry'),get_string('activate_desc', 'tool_sentry'),1));
+            get_string('activate', 'tool_sentry'), get_string('activate_desc', 'tool_sentry'), 1));
         $page->add(new admin_setting_configcheckbox('tool_sentry/send_default_pii',
-            get_string('send_default_pii', 'tool_sentry'),get_string('send_default_pii_desc', 'tool_sentry'),0));
+            get_string('send_default_pii', 'tool_sentry'), get_string('send_default_pii_desc', 'tool_sentry'), 0));
         $page->add(new admin_setting_configtext('tool_sentry/sample_rate', get_string('sample_rate', 'tool_sentry'),
-            get_string('sample_rate_desc', 'tool_sentry'),1,PARAM_FLOAT));
+            get_string('sample_rate_desc', 'tool_sentry'), 1, PARAM_FLOAT));
+        $page->add(new admin_setting_configtext('tool_sentry/profiles_sample_rate',
+            get_string('profiles_sample_rate', 'tool_sentry'),
+            get_string('profiles_sample_rate_desc', 'tool_sentry'), 1, PARAM_FLOAT));
         $page->add(new admin_setting_configcheckbox('tool_sentry/enable_tracing',
-            get_string('enable_tracing', 'tool_sentry'),get_string('enable_tracing_desc', 'tool_sentry'),1));
+            get_string('enable_tracing', 'tool_sentry'), get_string('enable_tracing_desc', 'tool_sentry'), 1));
         $page->add(new admin_setting_configtext('tool_sentry/traces_sample_rate',
             get_string('traces_sample_rate', 'tool_sentry'),
-            get_string('traces_sample_rate_desc', 'tool_sentry'),0,PARAM_FLOAT));
+            get_string('traces_sample_rate_desc', 'tool_sentry'), 0, PARAM_FLOAT));
         $page->add(new admin_setting_configtext('tool_sentry/max_breadcrumbs',
             get_string('max_breadcrumbs', 'tool_sentry'),
-            get_string('max_breadcrumbs_desc', 'tool_sentry'),100,PARAM_INT));
+            get_string('max_breadcrumbs_desc', 'tool_sentry'), 100, PARAM_INT));
         $page->add(new admin_setting_configselect('tool_sentry/max_request_body_size',
             get_string('max_request_body_size', 'tool_sentry'),
-            get_string('max_request_body_size_desc', 'tool_sentry'),'medium', [
-                'never'     =>  get_string('never', 'tool_sentry'),
-                'small'     =>  get_string('small', 'tool_sentry'),
-                'medium'    =>  get_string('medium', 'tool_sentry'),
-                'always'    =>  get_string('always', 'tool_sentry'),
+            get_string('max_request_body_size_desc', 'tool_sentry'), 'medium', [
+                'never'     => get_string('never', 'tool_sentry'),
+                'small'     => get_string('small', 'tool_sentry'),
+                'medium'    => get_string('medium', 'tool_sentry'),
+                'always'    => get_string('always', 'tool_sentry'),
             ]));
 
         $page->add(new admin_setting_configcheckbox('tool_sentry/attach_stacktrace',
-            get_string('attach_stacktrace', 'tool_sentry'),get_string('attach_stacktrace_desc', 'tool_sentry'),0));
+            get_string('attach_stacktrace', 'tool_sentry'), get_string('attach_stacktrace_desc', 'tool_sentry'), 0));
         $page->add(new admin_setting_configtext('tool_sentry/max_value_length',
             get_string('max_value_length', 'tool_sentry'),
-            get_string('max_value_length_desc', 'tool_sentry'),1024,PARAM_INT));
+            get_string('max_value_length_desc', 'tool_sentry'), 1024, PARAM_INT));
 
         $page->add(new admin_setting_configtext('tool_sentry/environment',
             get_string('environment', 'tool_sentry'),
             get_string('environment_desc', 'tool_sentry'), ''));
 
         $page->add(new admin_setting_configselect('tool_sentry/error_types', get_string('error_types', 'tool_sentry'),
-            get_string('error_types_desc', 'tool_sentry'),E_ALL, [
+            get_string('error_types_desc', 'tool_sentry'), E_ALL, [
                 E_ERROR             => 'E_ERROR',
                 E_WARNING           => 'E_WARNING',
                 E_PARSE             => 'E_PARSE',
