@@ -44,9 +44,10 @@ class helper {
      * @return void
      */
     public static function init(\core\event\base $event) {
-        $dns = get_config('tool_sentry', 'dns');
-        if ($dns) {
-            \Sentry\init(['dsn' => $dns]);
+        $config = get_config('tool_sentry');
+        if ($config->activate) {
+            unset($config->activate);
+            \Sentry\init((array)$config);
         }
     }
 
@@ -57,8 +58,15 @@ class helper {
      * @return void
      */
     public static function geterros(\core\event\base $event) {
-        $dns = get_config('tool_sentry', 'dns');
-        if ($dns) {
+        global $USER;
+        $config = get_config('tool_sentry');
+        if ($config->activate) {
+            if($USER->email) {
+                \Sentry\configureScope(function (\Sentry\State\Scope $scope){
+                    global $USER;
+                    $scope->setUser(['email' => $USER->email]);
+                });
+            }
             \Sentry\captureLastError();
         }
     }
