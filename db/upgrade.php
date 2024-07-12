@@ -27,10 +27,6 @@
  * Function to upgrade the plugin
  * @param $oldversion - old version of plugin
  * @return bool - if success
- *
- * @author    Esdras Caleb
- * @copyright  2023 Esdras Caleb
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 function xmldb_tool_sentry_upgrade($oldversion): bool {
     global $DB;
