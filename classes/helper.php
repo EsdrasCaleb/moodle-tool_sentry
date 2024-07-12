@@ -43,7 +43,7 @@ class helper {
      * @param \core\event\base $event The event.
      * @return void
      */
-    public static function init(?\core\event\base $event) {
+    public static function init(?\core\event\base $event = null) {
         $config = get_config('tool_sentry');
         if ($config->activate) {
             unset($config->activate);
@@ -87,7 +87,7 @@ class helper {
      * @param \core\event\base $event The event.
      * @return void
      */
-    public static function geterros(?\core\event\base $event) {
+    public static function geterros(?\core\event\base $event = null) {
         $config = get_config('tool_sentry');
         if ($config->activate) {
             \Sentry\captureLastError();
