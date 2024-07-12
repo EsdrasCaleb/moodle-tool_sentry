@@ -43,22 +43,22 @@ class helper {
      * @param \core\event\base $event The event.
      * @return void
      */
-    public static function init(\core\event\base $event=null) {
+    public static function init(?\core\event\base $event) {
         $config = get_config('tool_sentry');
         if ($config->activate) {
             unset($config->activate);
             unset($config->dns);
             unset($config->version);
-            if ($config->ignore_exceptions=="") {
+            if ($config->ignore_exceptions == "") {
                 unset($config->ignore_exceptions);
             }
-            if ($config->ignore_transactions=="") {
+            if ($config->ignore_transactions == "") {
                 unset($config->ignore_transactions);
             }
-            if ($config->in_app_exclude=="") {
+            if ($config->in_app_exclude == "") {
                 unset($config->in_app_exclude);
             }
-            if ($config->in_app_include=="") {
+            if ($config->in_app_include == "") {
                 unset($config->in_app_include);
             }
             $config->enable_tracing = boolval($config->enable_tracing);
@@ -67,11 +67,11 @@ class helper {
             $config = (array) $config;
 
             foreach ($config as $name => $value) {
-                if(is_numeric($value)){
-                    if(strpos($value,'.')) {
+                if (is_numeric($value)) {
+                    if (strpos($value, '.')) {
                         $config[$name] = floatval($value);
                     }
-                    else{
+                    else {
                         $config[$name] = intval($value);
                     }
                 }
@@ -87,7 +87,7 @@ class helper {
      * @param \core\event\base $event The event.
      * @return void
      */
-    public static function geterros(\core\event\base $event=null) {
+    public static function geterros(?\core\event\base $event) {
         $config = get_config('tool_sentry');
         if ($config->activate) {
             \Sentry\captureLastError();
