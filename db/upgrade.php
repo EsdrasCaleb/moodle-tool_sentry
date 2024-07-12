@@ -25,10 +25,11 @@
 
 /**
  * Function to upgrade the plugin
- * @param $oldversion - old version of plugin
+ *
+ * @param int $oldversion - old version of plugin
  * @return bool - if success
  */
-function xmldb_tool_sentry_upgrade($oldversion): bool {
+function xmldb_tool_sentry_upgrade(int $oldversion): bool {
     global $DB;
 
     if ($oldversion < 2024071200) {
