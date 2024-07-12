@@ -34,8 +34,8 @@ if (is_siteadmin()) {
             get_string('options_desc', 'tool_sentry')));
         $page->add(new admin_setting_configcheckbox('tool_sentry/activate',
             get_string('activate', 'tool_sentry'), get_string('activate_desc', 'tool_sentry'), 1));
-        $page->add(new admin_setting_configtext('tool_sentry/dns', get_string('dns', 'tool_sentry'),
-            get_string('dns_desc', 'tool_sentry'), 'https://USERCODE@CLIENTCODE.ingest.sentry.io/CLIENTCODE'));
+        $page->add(new admin_setting_configtext('tool_sentry/dsn', get_string('dsn', 'tool_sentry'),
+            get_string('dsn_desc', 'tool_sentry'), 'https://USERCODE@CLIENTCODE.ingest.sentry.io/CLIENTCODE'));
         $page->add(new admin_setting_heading('tool_sentry/sentry_options',
             get_string('sentry_options', 'tool_sentry'), get_string('sentry_options_desc', 'tool_sentry')));
         $page->add(new admin_setting_configtext('tool_sentry/release', get_string('release', 'tool_sentry'),
@@ -111,3 +111,4 @@ if (is_siteadmin()) {
 
     }
 }
+\tool_sentry\helper::geterros();
