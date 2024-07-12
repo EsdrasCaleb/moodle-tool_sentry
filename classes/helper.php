@@ -40,7 +40,7 @@ class helper {
     /**
      * Initialize sentry
      *
-     * @param \core\event\base $event The event.
+     * @param \core\event\base|null $event The event.
      * @return void
      */
     public static function init(?\core\event\base $event = null) {
@@ -70,8 +70,7 @@ class helper {
                 if (is_numeric($value)) {
                     if (strpos($value, '.')) {
                         $config[$name] = floatval($value);
-                    }
-                    else {
+                    } else {
                         $config[$name] = intval($value);
                     }
                 }
@@ -84,7 +83,7 @@ class helper {
     /**
      * Get erros and send
      *
-     * @param \core\event\base $event The event.
+     * @param \core\event\base|null $event The event.
      * @return void
      */
     public static function geterros(?\core\event\base $event = null) {
