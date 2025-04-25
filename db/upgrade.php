@@ -33,7 +33,7 @@ function xmldb_tool_sentry_upgrade(int $oldversion): bool {
     global $DB;
 
     if ($oldversion < 2024071200) {
-        $DB->delete_records("mdl_config_plugins", [ 'plugin' => 'tool_sentry', 'name' => 'dns']);
+        $DB->delete_records("config_plugins", [ 'plugin' => 'tool_sentry', 'name' => 'dns']);
         upgrade_plugin_savepoint(true, 2024071200, 'tool', 'sentry');
     }
 
