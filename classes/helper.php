@@ -45,25 +45,25 @@ class helper {
      */
     public static function init(?\core\event\base $event = null) {
         $config = get_config('tool_sentry');
-        if ($config->activate) {
+        if (isset($config->activate) && $config->activate) {
             unset($config->activate);
             unset($config->dns);
             unset($config->version);
-            if ($config->ignore_exceptions == "") {
+            if (isset($config->ignore_exceptions) && $config->ignore_exceptions == "") {
                 unset($config->ignore_exceptions);
             }
-            if ($config->ignore_transactions == "") {
+            if (isset($config->ignore_transactions) && $config->ignore_transactions == "") {
                 unset($config->ignore_transactions);
             }
-            if ($config->in_app_exclude == "") {
+            if (isset($config->in_app_exclude) && $config->in_app_exclude == "") {
                 unset($config->in_app_exclude);
             }
-            if ($config->in_app_include == "") {
+            if (isset($config->in_app_include) && $config->in_app_include == "") {
                 unset($config->in_app_include);
             }
-            $config->enable_tracing = boolval($config->enable_tracing);
-            $config->attach_stacktrace = boolval($config->attach_stacktrace);
-            $config->send_default_pii = boolval($config->send_default_pii);
+            $config->enable_tracing = isset($config->enable_tracing) && boolval($config->enable_tracing);
+            $config->attach_stacktrace = isset($config->attach_stacktrace) && boolval($config->attach_stacktrace);
+            $config->send_default_pii = isset($config->send_default_pii) && boolval($config->send_default_pii);
             $config = (array) $config;
 
             foreach ($config as $name => $value) {
@@ -88,7 +88,7 @@ class helper {
      */
     public static function geterros(?\core\event\base $event = null) {
         $config = get_config('tool_sentry');
-        if ($config->activate) {
+        if (isset($config->activate) && $config->activate) {
             \Sentry\captureLastError();
         }
     }
