@@ -30,7 +30,7 @@ global $CFG, $ADMIN;
 
 if (is_siteadmin()) {
     if (!$ADMIN->locate('tool_sentry')) {
-        $page = new admin_settingpage('sentryconfig', get_string('pluginsettigs', 'tool_sentry'));
+        $page = new admin_settingpage('sentryconfig', get_string('pluginsettings', 'tool_sentry'));
         $page->add(new admin_setting_heading('tool_sentry/options', get_string('options', 'tool_sentry'),
             get_string('options_desc', 'tool_sentry')));
         $page->add(new admin_setting_configcheckbox('tool_sentry/activate',
