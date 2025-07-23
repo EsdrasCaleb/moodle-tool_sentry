@@ -48,7 +48,7 @@ class helper {
      * @param \stdClass $config Raw plugin config.
      * @return array|null Clean config array or null if invalid.
      */
-    public static function get_clean_config($config): ?array {
+    private static function get_clean_config($config): ?array {
         if (empty($config->activate) || empty($config->dsn)) {
             return null;
         }

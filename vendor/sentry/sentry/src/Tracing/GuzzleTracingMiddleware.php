@@ -50,6 +50,7 @@ final class GuzzleTracingMiddleware
                 $spanContext->setOp('http.client');
                 $spanContext->setDescription($request->getMethod() . ' ' . (string) $partialUri);
                 $spanContext->setData([
+                    'http.request.method' => $request->getMethod(),
                     'http.query' => $request->getUri()->getQuery(),
                     'http.fragment' => $request->getUri()->getFragment(),
                 ]);
@@ -78,17 +79,21 @@ final class GuzzleTracingMiddleware
 
                     $breadcrumbData = [
                         'url' => (string) $partialUri,
-                        'method' => $request->getMethod(),
-                        'request_body_size' => $request->getBody()->getSize(),
-                        'http.query' => $request->getUri()->getQuery(),
-                        'http.fragment' => $request->getUri()->getFragment(),
+                        'http.request.method' => $request->getMethod(),
+                        'http.request.body.size' => $request->getBody()->getSize(),
                     ];
+                    if ('' !== $request->getUri()->getQuery()) {
+                        $breadcrumbData['http.query'] = $request->getUri()->getQuery();
+                    }
+                    if ('' !== $request->getUri()->getFragment()) {
+                        $breadcrumbData['http.fragment'] = $request->getUri()->getFragment();
+                    }
 
                     if (null !== $response) {
                         $childSpan->setStatus(SpanStatus::createFromHttpStatusCode($response->getStatusCode()));
 
-                        $breadcrumbData['status_code'] = $response->getStatusCode();
-                        $breadcrumbData['response_body_size'] = $response->getBody()->getSize();
+                        $breadcrumbData['http.response.status_code'] = $response->getStatusCode();
+                        $breadcrumbData['http.response.body.size'] = $response->getBody()->getSize();
                     } else {
                         $childSpan->setStatus(SpanStatus::internalError());
                     }

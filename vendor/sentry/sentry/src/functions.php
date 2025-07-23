@@ -67,6 +67,20 @@ function captureLastError(?EventHint $hint = null): ?EventId
 }
 
 /**
+ * Captures a check-in and sends it to Sentry.
+ *
+ * @param string             $slug          Identifier of the Monitor
+ * @param CheckInStatus      $status        The status of the check-in
+ * @param int|float|null     $duration      The duration of the check-in
+ * @param MonitorConfig|null $monitorConfig Configuration of the Monitor
+ * @param string|null        $checkInId     A check-in ID from the previous check-in
+ */
+function captureCheckIn(string $slug, CheckInStatus $status, $duration = null, ?MonitorConfig $monitorConfig = null, ?string $checkInId = null): ?string
+{
+    return SentrySdk::getCurrentHub()->captureCheckIn($slug, $status, $duration, $monitorConfig, $checkInId);
+}
+
+/**
  * Records a new breadcrumb which will be attached to future events. They
  * will be added to subsequent events to provide more context on user's
  * actions prior to an error or crash.
@@ -183,7 +197,7 @@ function getTraceparent(): string
     if (null !== $client) {
         $options = $client->getOptions();
 
-        if (null !== $options && $options->getEnableTracing()) {
+        if (null !== $options && $options->isTracingEnabled()) {
             $span = SentrySdk::getCurrentHub()->getSpan();
             if (null !== $span) {
                 return $span->toTraceparent();
@@ -213,7 +227,7 @@ function getBaggage(): string
     if (null !== $client) {
         $options = $client->getOptions();
 
-        if (null !== $options && $options->getEnableTracing()) {
+        if (null !== $options && $options->isTracingEnabled()) {
             $span = SentrySdk::getCurrentHub()->getSpan();
             if (null !== $span) {
                 return $span->toBaggage();
@@ -234,10 +248,8 @@ function getBaggage(): string
  * If the SDK is configured with enabled tracing,
  * this function returns a populated TransactionContext.
  * In any other cases, it populates the propagation context on the scope.
- *
- * @return mixed
  */
-function continueTrace(string $sentryTrace, string $baggage)
+function continueTrace(string $sentryTrace, string $baggage): TransactionContext
 {
     $hub = SentrySdk::getCurrentHub();
     $hub->configureScope(function (Scope $scope) use ($sentryTrace, $baggage) {
@@ -245,13 +257,5 @@ function continueTrace(string $sentryTrace, string $baggage)
         $scope->setPropagationContext($propagationContext);
     });
 
-    $client = $hub->getClient();
-
-    if (null !== $client) {
-        $options = $client->getOptions();
-
-        if (null !== $options && $options->getEnableTracing()) {
-            return TransactionContext::fromHeaders($sentryTrace, $baggage);
-        }
-    }
+    return TransactionContext::fromHeaders($sentryTrace, $baggage);
 }
