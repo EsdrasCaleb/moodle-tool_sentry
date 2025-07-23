@@ -90,11 +90,12 @@ class helper {
      */
     public static function init(?\core\event\base $event = null): void {
         $config = get_config('tool_sentry');
-        if (isset($config->activate) && $config->activate) {
+        $sentryconfig = self::get_clean_config($config);
+        if ($sentryconfig) {
             if (!self::$initialized) {
                 self::$initialized = true;
                 self::inject_sentry_js();
-                \Sentry\init(self::get_clean_config($config));
+                \Sentry\init($sentryconfig);
             }
         }
     }
