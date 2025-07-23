@@ -63,9 +63,9 @@ class helper {
             }
         }
 
-        $config->enable_tracing = !empty($config->enable_tracing);
-        $config->attach_stacktrace = !empty($config->attach_stacktrace);
-        $config->send_default_pii = !empty($config->send_default_pii);
+        $config->enable_tracing = !empty($config->enable_tracing ?? '');
+        $config->attach_stacktrace = !empty($config->attach_stacktrace ?? '');
+        $config->send_default_pii = !empty($config->send_default_pii ?? '');
 
         $configarray = (array) $config;
 
