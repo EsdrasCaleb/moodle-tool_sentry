@@ -70,7 +70,7 @@ class helper {
         $configarray = (array) $config;
 
         foreach ($configarray as $name => $value) {
-            if (is_numeric($value)) {
+            if (is_numeric($value) && $name !== 'release') {
                 if (strpos($value, '.') !== false) {
                     $configarray[$name] = floatval($value);
                 } else {
