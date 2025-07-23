@@ -36,6 +36,42 @@ require_once($CFG->dirroot.'/admin/tool/sentry/vendor/autoload.php');
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class helper {
+    private static $initialized = false;
+
+    public static function get_clean_config($config): ?array {
+        if (empty($config->activate) || empty($config->dsn)) {
+            return null;
+        }
+
+        unset($config->activate);
+        unset($config->version);
+        unset($config->javascriptloader);
+
+        foreach (['ignore_exceptions', 'ignore_transactions', 'in_app_exclude', 'in_app_include'] as $key) {
+            if (isset($config->$key) && $config->$key === "") {
+                unset($config->$key);
+            }
+        }
+
+        $config->enable_tracing = !empty($config->enable_tracing);
+        $config->attach_stacktrace = !empty($config->attach_stacktrace);
+        $config->send_default_pii = !empty($config->send_default_pii);
+
+        $configArray = (array) $config;
+
+        foreach ($configArray as $name => $value) {
+            if (is_numeric($value)) {
+                if (strpos($value, '.') !== false) {
+                    $configArray[$name] = floatval($value);
+                } else {
+                    $configArray[$name] = intval($value);
+                }
+            }
+        }
+
+        return $configArray;
+    }
+
 
     /**
      * Initialize sentry
@@ -46,37 +82,11 @@ class helper {
     public static function init(?\core\event\base $event = null) {
         $config = get_config('tool_sentry');
         if (isset($config->activate) && $config->activate) {
-            unset($config->activate);
-            unset($config->dns);
-            unset($config->version);
-            if (isset($config->ignore_exceptions) && $config->ignore_exceptions == "") {
-                unset($config->ignore_exceptions);
+            if(!self::$initialized) {
+                self::$initialized = true;
+                self::inject_sentry_js();
+                \Sentry\init(self::get_clean_config($config));
             }
-            if (isset($config->ignore_transactions) && $config->ignore_transactions == "") {
-                unset($config->ignore_transactions);
-            }
-            if (isset($config->in_app_exclude) && $config->in_app_exclude == "") {
-                unset($config->in_app_exclude);
-            }
-            if (isset($config->in_app_include) && $config->in_app_include == "") {
-                unset($config->in_app_include);
-            }
-            $config->enable_tracing = isset($config->enable_tracing) && boolval($config->enable_tracing);
-            $config->attach_stacktrace = isset($config->attach_stacktrace) && boolval($config->attach_stacktrace);
-            $config->send_default_pii = isset($config->send_default_pii) && boolval($config->send_default_pii);
-            $config = (array) $config;
-
-            foreach ($config as $name => $value) {
-                if (is_numeric($value)) {
-                    if (strpos($value, '.')) {
-                        $config[$name] = floatval($value);
-                    } else {
-                        $config[$name] = intval($value);
-                    }
-                }
-            }
-
-            \Sentry\init($config);
         }
     }
 
@@ -92,4 +102,29 @@ class helper {
             \Sentry\captureLastError();
         }
     }
+
+    private static function inject_sentry_js() {
+        $config = get_config('tool_sentry');
+
+        if (empty($config->activate) || empty($config->javascriptloader)) {
+            return;
+        }
+
+        $javascriptloader = $config->javascriptloader;
+        $config = self::get_clean_config($config);
+        if ($config === null) {
+            return;
+        }
+
+        $configJson = json_encode($config);
+
+        echo <<<JS
+<script src="{$javascriptloader}" crossorigin="anonymous"></script>
+<script>
+  Sentry.init({$configJson});
+</script>
+JS;
+
+    }
+
 }

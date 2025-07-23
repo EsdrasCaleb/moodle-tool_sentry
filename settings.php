@@ -27,6 +27,7 @@ defined('MOODLE_INTERNAL') || die;
 
 global $CFG, $ADMIN;
 \tool_sentry\helper::init();
+
 if (is_siteadmin()) {
     if (!$ADMIN->locate('tool_sentry')) {
         $page = new admin_settingpage('sentryconfig', get_string('pluginsettigs', 'tool_sentry'));
@@ -36,6 +37,8 @@ if (is_siteadmin()) {
             get_string('activate', 'tool_sentry'), get_string('activate_desc', 'tool_sentry'), 1));
         $page->add(new admin_setting_configtext('tool_sentry/dsn', get_string('dsn', 'tool_sentry'),
             get_string('dsn_desc', 'tool_sentry'), 'https://USERCODE@CLIENTCODE.ingest.sentry.io/CLIENTCODE'));
+        $page->add(new admin_setting_configtext('tool_sentry/javascriptloader', get_string('javascriptloader', 'tool_sentry'),
+            get_string('javascriptloader_desc', 'tool_sentry'), ''));
         $page->add(new admin_setting_heading('tool_sentry/sentry_options',
             get_string('sentry_options', 'tool_sentry'), get_string('sentry_options_desc', 'tool_sentry')));
         $page->add(new admin_setting_configtext('tool_sentry/release', get_string('release', 'tool_sentry'),
