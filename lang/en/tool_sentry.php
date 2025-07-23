@@ -22,20 +22,17 @@
  * @copyright  2023 Esdras Caleb
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 $string['options'] = "Options";
-$string['options_desc'] = "This are need in order to work";
-$string['pluginname'] = 'Sentry report tool';
-$string['pluginsettigs'] = "Sentry Configuration";
+$string['options_desc'] = "These are needed in order to work";
 $string['activate'] = "Activate Sentry Plugin";
-$string['sentry_options'] = "Sentry Options";
-$string['activate_desc'] = "Activate Sentry to send information to the configured dns";
+$string['activate_desc'] = "Activate Sentry to send information to the configured DSN";
 $string['dsn'] = "Sentry Server DSN";
-$string['sentry_options_desc'] = "This Change the way the options are sent to sentry";
 $string['dsn_desc'] = "Sentry server address with auth token";
-$string['privacy:metadata'] = 'The  plugin does not store any personal data. However, it send the IP of a user that had an error to the sentry server configured in it.';
+$string['privacy:metadata'] = 'The plugin does not store any personal data. However, it sends the IP of a user that had an error to the configured Sentry server.';
 $string['release'] = "Sentry Release";
+$string['release_desc'] = "Sets the release. If not set, the SDK will try to automatically configure a release out of the box, but it’s better to manually set it to guarantee the release is in sync with your deploy integrations.";
 $string['profiles_sample_rate'] = "Profile Sample Rate";
-$string['release_desc'] = "Sets the release. If not set, the SDK will try to automatically configure a release out of the box but it's a better idea to manually set it to guarantee that the release is in sync with your deploy integrations.";
 $string['profiles_sample_rate_desc'] = "For Profiling to work, you have to first enable Sentry’s tracing via traces_sample_rate (like in the example above). Read our tracing setup documentation to learn how to configure sampling. If you set your sample rate to 1.0, all transactions will be captured.";
 $string['sample_rate'] = "Sample Rate";
 $string['sample_rate_desc'] = "Configures the sample rate for error events, in the range of 0.0 to 1.0. The default is 1.0, which means that 100% of error events will be sent. If set to 0.1, only 10% of error events will be sent. Events are picked randomly.";
@@ -58,18 +55,22 @@ $string['enable_tracing_desc'] = "A boolean value, if true, transactions and tra
 $string['environment'] = "Sentry Environment";
 $string['environment_desc'] = "Sets the environment. This string is freeform and set to production by default. A release can be associated with more than one environment to separate them in the UI (think staging vs production or similar).";
 $string['error_types'] = "Error Types";
-$string['error_types_desc'] = "Sets which errors are reported. It takes the same values as PHP's error_reporting configuration parameter. By default all types of errors are be reported (equivalent to E_ALL).";
+$string['error_types_desc'] = "Sets which errors are reported. It takes the same values as PHP's error_reporting configuration parameter. By default all types of errors are reported (equivalent to E_ALL).";
 $string['max_value_length'] = "Max Value Length";
 $string['max_value_length_desc'] = "The number of characters after which the values containing text in the event payload will be truncated (defaults to 1024).";
 $string['ignore_exceptions'] = "Ignore Exceptions";
-$string['ignore_exceptions_desc'] = "A list of class names that matches exceptions that shouldn't be sent to Sentry. Checks whether the provided class name is of a given type or subtype.";
+$string['ignore_exceptions_desc'] = "A list of class names that match exceptions that shouldn't be sent to Sentry. Checks whether the provided class name is of a given type or subtype.";
 $string['ignore_transactions'] = "Ignore Transactions";
 $string['ignore_transactions_desc'] = "A list of strings that match transaction names that shouldn't be sent to Sentry.";
 $string['server_name'] = "Server Name";
 $string['server_name_desc'] = "This option can be used to supply a \"server name\". When provided, the name of the server is sent along and persisted in the event. For many integrations, the server name actually corresponds to the device hostname, even in situations where the machine is not actually a server.";
-$string['in_app_exclude'] = "In App Exnclude";
+$string['in_app_exclude'] = "In App Exclude";
 $string['in_app_exclude_desc'] = "A list of string prefixes of module names that do not belong to the app, but rather to third-party packages. Modules considered not part of the app will be hidden from stack traces by default.";
 $string['in_app_include'] = "In App Include";
 $string['in_app_include_desc'] = "A list of string prefixes of module names that belong to the app. This option takes precedence over in-app-exclude.";
 $string['javascriptloader'] = "Javascript Loader";
 $string['javascriptloader_desc'] = "Enter only the src URL from the script tag found in Settings > Projects > (select project) > Client Keys (DSN) > Configure > JavaScript Loader. Example: https://js.sentry-cdn.com/USERCODE.min.js";
+$string['sentry_options'] = "Sentry Options";
+$string['sentry_options_desc'] = "Change how the options are sent to Sentry";
+$string['pluginname'] = 'Sentry report tool';
+$string['pluginsettings'] = "Sentry Configuration";
