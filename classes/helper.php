@@ -118,6 +118,7 @@ class helper {
      * @return void
      */
     private static function inject_sentry_js(): void {
+        global $PAGE;
         $config = get_config('tool_sentry');
 
         if (empty($config->activate) || empty($config->javascriptloader)) {
@@ -132,11 +133,17 @@ class helper {
 
         $configjson = json_encode($config);
 
-        echo <<<JS
-<script src="{$javascriptloader}" crossorigin="anonymous"></script>
-<script>
-  Sentry.init({$configjson});
-</script>
-JS;
+        $code = "
+        (function() {
+              const script = document.createElement('script');
+              script.src = '$javascriptloader'; // substitua se não for usar PHP
+              script.crossOrigin = 'anonymous';
+              script.onload = function() {
+                Sentry.init($configjson);
+              };
+              document.head.appendChild(script);
+            })();";
+
+        $PAGE->requires->js_init_code($code);
     }
 }
