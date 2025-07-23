@@ -67,19 +67,19 @@ class helper {
         $config->attach_stacktrace = !empty($config->attach_stacktrace);
         $config->send_default_pii = !empty($config->send_default_pii);
 
-        $config_array = (array) $config;
+        $configArray = (array) $config;
 
-        foreach ($config_array as $name => $value) {
+        foreach ($configArray as $name => $value) {
             if (is_numeric($value)) {
                 if (strpos($value, '.') !== false) {
-                    $config_array[$name] = floatval($value);
+                    $configArray[$name] = floatval($value);
                 } else {
-                    $config_array[$name] = intval($value);
+                    $configArray[$name] = intval($value);
                 }
             }
         }
 
-        return $config_array;
+        return $configArray;
     }
 
     /**
