@@ -54,6 +54,9 @@ final class ErrorPlugin implements Plugin
         $this->onlyServerException = $options['only_server_exception'];
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function handleRequest(RequestInterface $request, callable $next, callable $first): Promise
     {
         $promise = $next($request);

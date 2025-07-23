@@ -26,6 +26,9 @@ final class AuthenticationPlugin implements Plugin
         $this->authentication = $authentication;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function handleRequest(RequestInterface $request, callable $next, callable $first): Promise
     {
         $request = $this->authentication->authenticate($request);

@@ -12,11 +12,11 @@ use Psr\Http\Message\StreamInterface;
  */
 trait MessageTrait
 {
-    /** @var string[][] Map of all registered headers, as original name => array of values */
+    /** @var array<string, string[]> Map of all registered headers, as original name => array of values */
     private $headers = [];
 
-    /** @var string[] Map of lowercase header name => original name at registration */
-    private $headerNames = [];
+    /** @var array<string, string> Map of lowercase header name => original name at registration */
+    private $headerNames  = [];
 
     /** @var string */
     private $protocol = '1.1';
@@ -37,7 +37,6 @@ trait MessageTrait
 
         $new = clone $this;
         $new->protocol = $version;
-
         return $new;
     }
 
@@ -136,12 +135,11 @@ trait MessageTrait
 
         $new = clone $this;
         $new->stream = $body;
-
         return $new;
     }
 
     /**
-     * @param (string|string[])[] $headers
+     * @param array<string|int, string|string[]> $headers
      */
     private function setHeaders(array $headers): void
     {
@@ -193,7 +191,7 @@ trait MessageTrait
      *
      * @return string[] Trimmed header values
      *
-     * @see https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.4
+     * @see https://tools.ietf.org/html/rfc7230#section-3.2.4
      */
     private function trimAndValidateHeaderValues(array $values): array
     {
@@ -213,7 +211,7 @@ trait MessageTrait
     }
 
     /**
-     * @see https://datatracker.ietf.org/doc/html/rfc7230#section-3.2
+     * @see https://tools.ietf.org/html/rfc7230#section-3.2
      *
      * @param mixed $header
      */
@@ -226,7 +224,7 @@ trait MessageTrait
             ));
         }
 
-        if (!preg_match('/^[a-zA-Z0-9\'`#$%&*+.^_|~!-]+$/D', $header)) {
+        if (! preg_match('/^[a-zA-Z0-9\'`#$%&*+.^_|~!-]+$/D', $header)) {
             throw new \InvalidArgumentException(
                 sprintf('"%s" is not valid header name.', $header)
             );
@@ -234,7 +232,7 @@ trait MessageTrait
     }
 
     /**
-     * @see https://datatracker.ietf.org/doc/html/rfc7230#section-3.2
+     * @see https://tools.ietf.org/html/rfc7230#section-3.2
      *
      * field-value    = *( field-content / obs-fold )
      * field-content  = field-vchar [ 1*( SP / HTAB ) field-vchar ]
@@ -256,7 +254,7 @@ trait MessageTrait
         // Clients must not send a request with line folding and a server sending folded headers is
         // likely very rare. Line folding is a fairly obscure feature of HTTP/1.1 and thus not accepting
         // folding is not likely to break any legitimate use case.
-        if (!preg_match('/^[\x20\x09\x21-\x7E\x80-\xFF]*$/D', $value)) {
+        if (! preg_match('/^[\x20\x09\x21-\x7E\x80-\xFF]*$/D', $value)) {
             throw new \InvalidArgumentException(
                 sprintf('"%s" is not valid header value.', $value)
             );

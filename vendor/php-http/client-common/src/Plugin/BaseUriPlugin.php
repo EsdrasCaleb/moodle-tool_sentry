@@ -24,7 +24,7 @@ final class BaseUriPlugin implements Plugin
     /**
      * @var AddPathPlugin|null
      */
-    private $addPathPlugin;
+    private $addPathPlugin = null;
 
     /**
      * @param UriInterface $uri        Has to contain a host name and can have a path
@@ -39,6 +39,9 @@ final class BaseUriPlugin implements Plugin
         }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function handleRequest(RequestInterface $request, callable $next, callable $first): Promise
     {
         $addHostNext = function (RequestInterface $request) use ($next, $first) {

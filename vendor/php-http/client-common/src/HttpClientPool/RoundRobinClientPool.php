@@ -13,6 +13,9 @@ use Http\Client\Common\Exception\HttpClientNotFoundException;
  */
 final class RoundRobinClientPool extends HttpClientPool
 {
+    /**
+     * {@inheritdoc}
+     */
     protected function chooseHttpClient(): HttpClientPoolItem
     {
         $last = current($this->clientPool);

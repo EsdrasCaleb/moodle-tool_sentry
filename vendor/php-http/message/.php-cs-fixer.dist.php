@@ -12,8 +12,7 @@ return $config
     ->setRiskyAllowed(true)
     ->setRules([
         '@Symfony' => true,
-	'single_line_throw' => false,
-        'trailing_comma_in_multiline' => false, // for methods this is incompatible with PHP 7
+        'single_line_throw' => false,
     ])
     ->setFinder($finder)
 ;

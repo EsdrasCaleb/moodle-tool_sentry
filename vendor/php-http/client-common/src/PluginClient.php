@@ -64,6 +64,9 @@ final class PluginClient implements HttpClient, HttpAsyncClient
         $this->options = $this->configure($options);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function sendRequest(RequestInterface $request): ResponseInterface
     {
         // If the client doesn't support sync calls, call async
@@ -84,6 +87,9 @@ final class PluginClient implements HttpClient, HttpAsyncClient
         return $pluginChain($request)->wait();
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function sendAsyncRequest(RequestInterface $request)
     {
         $pluginChain = $this->createPluginChain($this->plugins, function (RequestInterface $request) {

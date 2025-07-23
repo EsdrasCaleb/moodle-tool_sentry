@@ -30,13 +30,14 @@ trait CommonResponseTrait
      * @var callable|null A callback that tells whether we're waiting for response headers
      */
     private $initializer;
-    /** @var bool|\Closure|resource|null */
     private $shouldBuffer;
-    /** @var resource|null */
     private $content;
-    private int $offset = 0;
-    private ?array $jsonData = null;
+    private $offset = 0;
+    private $jsonData;
 
+    /**
+     * {@inheritdoc}
+     */
     public function getContent(bool $throw = true): string
     {
         if ($this->initializer) {
@@ -74,6 +75,9 @@ trait CommonResponseTrait
         return stream_get_contents($this->content);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function toArray(bool $throw = true): array
     {
         if ('' === $content = $this->getContent($throw)) {
@@ -85,9 +89,13 @@ trait CommonResponseTrait
         }
 
         try {
-            $content = json_decode($content, true, 512, \JSON_BIGINT_AS_STRING | \JSON_THROW_ON_ERROR);
+            $content = json_decode($content, true, 512, \JSON_BIGINT_AS_STRING | (\PHP_VERSION_ID >= 70300 ? \JSON_THROW_ON_ERROR : 0));
         } catch (\JsonException $e) {
             throw new JsonException($e->getMessage().sprintf(' for "%s".', $this->getInfo('url')), $e->getCode());
+        }
+
+        if (\PHP_VERSION_ID < 70300 && \JSON_ERROR_NONE !== json_last_error()) {
+            throw new JsonException(json_last_error_msg().sprintf(' for "%s".', $this->getInfo('url')), json_last_error());
         }
 
         if (!\is_array($content)) {
@@ -103,7 +111,7 @@ trait CommonResponseTrait
     }
 
     /**
-     * @return resource
+     * {@inheritdoc}
      */
     public function toStream(bool $throw = true)
     {
@@ -124,9 +132,6 @@ trait CommonResponseTrait
         throw new \BadMethodCallException('Cannot serialize '.__CLASS__);
     }
 
-    /**
-     * @return void
-     */
     public function __wakeup()
     {
         throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
@@ -161,7 +166,7 @@ trait CommonResponseTrait
         $response->initializer = null;
     }
 
-    private function checkStatusCode(): void
+    private function checkStatusCode()
     {
         $code = $this->getInfo('http_code');
 

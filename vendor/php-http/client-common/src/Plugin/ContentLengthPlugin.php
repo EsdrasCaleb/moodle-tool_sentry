@@ -16,6 +16,9 @@ use Psr\Http\Message\RequestInterface;
  */
 final class ContentLengthPlugin implements Plugin
 {
+    /**
+     * {@inheritdoc}
+     */
     public function handleRequest(RequestInterface $request, callable $next, callable $first): Promise
     {
         if (!$request->hasHeader('Content-Length')) {

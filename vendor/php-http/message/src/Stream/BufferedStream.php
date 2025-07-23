@@ -170,9 +170,6 @@ class BufferedStream implements StreamInterface
         if ($length < 0) {
             throw new \InvalidArgumentException('Can not read a negative amount of bytes');
         }
-        if (0 === $length) {
-            return '';
-        }
 
         $read = '';
 

@@ -17,7 +17,10 @@ final class HttpRejectedPromise implements Promise
         $this->exception = $exception;
     }
 
-    public function then(?callable $onFulfilled = null, ?callable $onRejected = null)
+    /**
+     * {@inheritdoc}
+     */
+    public function then(callable $onFulfilled = null, callable $onRejected = null)
     {
         if (null === $onRejected) {
             return $this;
@@ -35,11 +38,17 @@ final class HttpRejectedPromise implements Promise
         }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getState()
     {
         return Promise::REJECTED;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function wait($unwrap = true)
     {
         if ($unwrap) {

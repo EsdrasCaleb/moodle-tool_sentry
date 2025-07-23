@@ -184,10 +184,6 @@ final class DynamicSamplingContext
             }
         });
 
-        if (null !== $transaction->getSampled()) {
-            $samplingContext->set('sampled', $transaction->getSampled() ? 'true' : 'false');
-        }
-
         $samplingContext->freeze();
 
         return $samplingContext;

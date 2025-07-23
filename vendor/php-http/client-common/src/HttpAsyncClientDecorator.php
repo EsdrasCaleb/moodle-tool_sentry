@@ -20,6 +20,8 @@ trait HttpAsyncClientDecorator
     protected $httpAsyncClient;
 
     /**
+     * {@inheritdoc}
+     *
      * @see HttpAsyncClient::sendAsyncRequest
      */
     public function sendAsyncRequest(RequestInterface $request)

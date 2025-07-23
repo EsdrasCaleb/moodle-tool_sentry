@@ -10,16 +10,22 @@ namespace Http\Promise;
 final class RejectedPromise implements Promise
 {
     /**
-     * @var \Throwable
+     * @var \Exception
      */
     private $exception;
 
-    public function __construct(\Throwable $exception)
+    /**
+     * @param \Exception $exception
+     */
+    public function __construct(\Exception $exception)
     {
         $this->exception = $exception;
     }
 
-    public function then(?callable $onFulfilled = null, ?callable $onRejected = null)
+    /**
+     * {@inheritdoc}
+     */
+    public function then(callable $onFulfilled = null, callable $onRejected = null)
     {
         if (null === $onRejected) {
             return $this;
@@ -32,17 +38,21 @@ final class RejectedPromise implements Promise
         }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getState()
     {
         return Promise::REJECTED;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function wait($unwrap = true)
     {
         if ($unwrap) {
             throw $this->exception;
         }
-
-        return null;
     }
 }

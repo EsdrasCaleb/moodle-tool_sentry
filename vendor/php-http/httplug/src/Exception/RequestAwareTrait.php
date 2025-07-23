@@ -16,6 +16,9 @@ trait RequestAwareTrait
         $this->request = $request;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getRequest(): RequestInterface
     {
         return $this->request;

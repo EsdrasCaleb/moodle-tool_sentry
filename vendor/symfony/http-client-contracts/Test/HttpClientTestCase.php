@@ -11,7 +11,6 @@
 
 namespace Symfony\Contracts\HttpClient\Test;
 
-use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
@@ -26,17 +25,7 @@ abstract class HttpClientTestCase extends TestCase
 {
     public static function setUpBeforeClass(): void
     {
-        if (!\function_exists('ob_gzhandler')) {
-            static::markTestSkipped('The "ob_gzhandler" function is not available.');
-        }
-
         TestHttpServer::start();
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        TestHttpServer::stop(8067);
-        TestHttpServer::stop(8077);
     }
 
     abstract protected function getHttpClient(string $testCase): HttpClientInterface;
@@ -146,7 +135,7 @@ abstract class HttpClientTestCase extends TestCase
 
         $this->assertSame($firstContent, $secondContent);
 
-        $response = $client->request('GET', 'http://localhost:8057', ['buffer' => fn () => false]);
+        $response = $client->request('GET', 'http://localhost:8057', ['buffer' => function () { return false; }]);
         $response->getContent();
 
         $this->expectException(TransportExceptionInterface::class);
@@ -237,13 +226,13 @@ abstract class HttpClientTestCase extends TestCase
         try {
             $response->getHeaders();
             $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface) {
+        } catch (ClientExceptionInterface $e) {
         }
 
         try {
             $response->getContent();
             $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface) {
+        } catch (ClientExceptionInterface $e) {
         }
 
         $this->assertSame(404, $response->getStatusCode());
@@ -257,7 +246,7 @@ abstract class HttpClientTestCase extends TestCase
                 $this->assertTrue($chunk->isFirst());
             }
             $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface) {
+        } catch (ClientExceptionInterface $e) {
         }
     }
 
@@ -277,14 +266,14 @@ abstract class HttpClientTestCase extends TestCase
         try {
             $response->getStatusCode();
             $this->fail(TransportExceptionInterface::class.' expected');
-        } catch (TransportExceptionInterface) {
+        } catch (TransportExceptionInterface $e) {
             $this->addToAssertionCount(1);
         }
 
         try {
             $response->getStatusCode();
             $this->fail(TransportExceptionInterface::class.' still expected');
-        } catch (TransportExceptionInterface) {
+        } catch (TransportExceptionInterface $e) {
             $this->addToAssertionCount(1);
         }
 
@@ -294,7 +283,7 @@ abstract class HttpClientTestCase extends TestCase
             foreach ($client->stream($response) as $r => $chunk) {
             }
             $this->fail(TransportExceptionInterface::class.' expected');
-        } catch (TransportExceptionInterface) {
+        } catch (TransportExceptionInterface $e) {
             $this->addToAssertionCount(1);
         }
 
@@ -448,7 +437,7 @@ abstract class HttpClientTestCase extends TestCase
         try {
             $response->getHeaders();
             $this->fail(RedirectionExceptionInterface::class.' expected');
-        } catch (RedirectionExceptionInterface) {
+        } catch (RedirectionExceptionInterface $e) {
         }
 
         $this->assertSame(302, $response->getStatusCode());
@@ -735,18 +724,6 @@ abstract class HttpClientTestCase extends TestCase
         $this->assertSame(200, $response->getStatusCode());
     }
 
-    public function testIPv6Resolve()
-    {
-        TestHttpServer::start(-8087);
-
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://symfony.com:8087/', [
-            'resolve' => ['symfony.com' => '::1'],
-        ]);
-
-        $this->assertSame(200, $response->getStatusCode());
-    }
-
     public function testNotATimeout()
     {
         $client = $this->getHttpClient(__FUNCTION__);
@@ -882,7 +859,7 @@ abstract class HttpClientTestCase extends TestCase
                 try {
                     $response->getContent();
                     $this->fail(TransportExceptionInterface::class.' expected');
-                } catch (TransportExceptionInterface) {
+                } catch (TransportExceptionInterface $e) {
                 }
             }
             $responses = [];
@@ -915,7 +892,7 @@ abstract class HttpClientTestCase extends TestCase
                 try {
                     unset($response);
                     $this->fail(TransportExceptionInterface::class.' expected');
-                } catch (TransportExceptionInterface) {
+                } catch (TransportExceptionInterface $e) {
                 }
             }
 
@@ -992,14 +969,6 @@ abstract class HttpClientTestCase extends TestCase
         } finally {
             unset($_SERVER['http_proxy']);
         }
-
-        $response = $client->request('GET', 'http://localhost:8057/301/proxy', [
-            'proxy' => 'http://localhost:8057',
-        ]);
-
-        $body = $response->toArray();
-        $this->assertSame('localhost:8057', $body['HTTP_HOST']);
-        $this->assertMatchesRegularExpression('#^http://(localhost|127\.0\.0\.1):8057/$#', $body['REQUEST_URI']);
     }
 
     public function testNoProxy()
@@ -1026,7 +995,6 @@ abstract class HttpClientTestCase extends TestCase
     /**
      * @requires extension zlib
      */
-    #[RequiresPhpExtension('zlib')]
     public function testAutoEncodingRequest()
     {
         $client = $this->getHttpClient(__FUNCTION__);
@@ -1100,7 +1068,6 @@ abstract class HttpClientTestCase extends TestCase
     /**
      * @requires extension zlib
      */
-    #[RequiresPhpExtension('zlib')]
     public function testUserlandEncodingRequest()
     {
         $client = $this->getHttpClient(__FUNCTION__);
@@ -1123,7 +1090,6 @@ abstract class HttpClientTestCase extends TestCase
     /**
      * @requires extension zlib
      */
-    #[RequiresPhpExtension('zlib')]
     public function testGzipBroken()
     {
         $client = $this->getHttpClient(__FUNCTION__);
@@ -1144,7 +1110,7 @@ abstract class HttpClientTestCase extends TestCase
 
         try {
             $response->getContent();
-        } catch (TransportExceptionInterface) {
+        } catch (TransportExceptionInterface $e) {
             $this->addToAssertionCount(1);
         }
 
@@ -1156,41 +1122,16 @@ abstract class HttpClientTestCase extends TestCase
     public function testWithOptions()
     {
         $client = $this->getHttpClient(__FUNCTION__);
+        if (!method_exists($client, 'withOptions')) {
+            $this->markTestSkipped(sprintf('Not implementing "%s::withOptions()" is deprecated.', get_debug_type($client)));
+        }
+
         $client2 = $client->withOptions(['base_uri' => 'http://localhost:8057/']);
 
         $this->assertNotSame($client, $client2);
-        $this->assertSame($client::class, $client2::class);
+        $this->assertSame(\get_class($client), \get_class($client2));
 
         $response = $client2->request('GET', '/');
         $this->assertSame(200, $response->getStatusCode());
-    }
-
-    public function testBindToPort()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057', ['bindto' => '127.0.0.1:9876']);
-        $response->getStatusCode();
-
-        $vars = $response->toArray();
-
-        self::assertSame('127.0.0.1', $vars['REMOTE_ADDR']);
-        self::assertSame('9876', $vars['REMOTE_PORT']);
-    }
-
-    public function testBindToPortV6()
-    {
-        TestHttpServer::start(-8087);
-
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://[::1]:8087', ['bindto' => '[::1]:9876']);
-        $response->getStatusCode();
-
-        $vars = $response->toArray();
-
-        self::assertSame('::1', $vars['REMOTE_ADDR']);
-
-        if ('\\' !== \DIRECTORY_SEPARATOR) {
-            self::assertSame('9876', $vars['REMOTE_PORT']);
-        }
     }
 }

@@ -21,6 +21,8 @@ trait HttpClientDecorator
     protected $httpClient;
 
     /**
+     * {@inheritdoc}
+     *
      * @see ClientInterface::sendRequest
      */
     public function sendRequest(RequestInterface $request): ResponseInterface
