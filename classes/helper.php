@@ -67,19 +67,19 @@ class helper {
         $config->attach_stacktrace = !empty($config->attach_stacktrace);
         $config->send_default_pii = !empty($config->send_default_pii);
 
-        $configArray = (array) $config;
+        $configarray = (array) $config;
 
-        foreach ($configArray as $name => $value) {
+        foreach ($configarray as $name => $value) {
             if (is_numeric($value)) {
                 if (strpos($value, '.') !== false) {
-                    $configArray[$name] = floatval($value);
+                    $configarray[$name] = floatval($value);
                 } else {
-                    $configArray[$name] = intval($value);
+                    $configarray[$name] = intval($value);
                 }
             }
         }
 
-        return $configArray;
+        return $configarray;
     }
 
     /**
@@ -130,12 +130,12 @@ class helper {
             return;
         }
 
-        $config_json = json_encode($config);
+        $configjson = json_encode($config);
 
         echo <<<JS
 <script src="{$javascriptloader}" crossorigin="anonymous"></script>
 <script>
-  Sentry.init({$config_json});
+  Sentry.init({$configjson});
 </script>
 JS;
     }
