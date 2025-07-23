@@ -73,5 +73,4 @@ $string['in_app_include_desc'] = "A list of string prefixes of module names that
 $string['in_app_exclude'] = "In App Exnclude";
 $string['in_app_exclude_desc'] = "A list of string prefixes of module names that do not belong to the app, but rather to third-party packages. Modules considered not part of the app will be hidden from stack traces by default.";
 $string['javascriptloader'] = "Javascript Loader";
-$string['javascriptloader_desc'] = "Enter only the src URL from the script tag found in Settings > Projects > (select project) > Client Keys (DSN) > Configure > JavaScript Loader. Example:
-https://js.sentry-cdn.com/USERCODE.min.js";
+$string['javascriptloader_desc'] = "Enter only the src URL from the script tag found in Settings > Projects > (select project) > Client Keys (DSN) > Configure > JavaScript Loader. Example: https://js.sentry-cdn.com/USERCODE.min.js";

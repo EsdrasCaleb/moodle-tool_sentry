@@ -23,21 +23,31 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
 namespace tool_sentry;
 
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot.'/admin/tool/sentry/vendor/autoload.php');
+
 /**
  * Class helper to provide functions to events
- * @author    Esdras Caleb
+ *
+ * @package    tool_sentry
+ * @author     Esdras Caleb
  * @copyright  2023 Esdras Caleb
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class helper {
+
+    /** @var bool Whether Sentry has already been initialized. */
     private static $initialized = false;
 
+    /**
+     * Cleans and converts Sentry config object into array with correct types.
+     *
+     * @param \stdClass $config Raw plugin config.
+     * @return array|null Clean config array or null if invalid.
+     */
     public static function get_clean_config($config): ?array {
         if (empty($config->activate) || empty($config->dsn)) {
             return null;
@@ -57,32 +67,31 @@ class helper {
         $config->attach_stacktrace = !empty($config->attach_stacktrace);
         $config->send_default_pii = !empty($config->send_default_pii);
 
-        $configArray = (array) $config;
+        $config_array = (array) $config;
 
-        foreach ($configArray as $name => $value) {
+        foreach ($config_array as $name => $value) {
             if (is_numeric($value)) {
                 if (strpos($value, '.') !== false) {
-                    $configArray[$name] = floatval($value);
+                    $config_array[$name] = floatval($value);
                 } else {
-                    $configArray[$name] = intval($value);
+                    $config_array[$name] = intval($value);
                 }
             }
         }
 
-        return $configArray;
+        return $config_array;
     }
 
-
     /**
-     * Initialize sentry
+     * Initialize sentry.
      *
      * @param \core\event\base|null $event The event.
      * @return void
      */
-    public static function init(?\core\event\base $event = null) {
+    public static function init(?\core\event\base $event = null): void {
         $config = get_config('tool_sentry');
         if (isset($config->activate) && $config->activate) {
-            if(!self::$initialized) {
+            if (!self::$initialized) {
                 self::$initialized = true;
                 self::inject_sentry_js();
                 \Sentry\init(self::get_clean_config($config));
@@ -91,19 +100,24 @@ class helper {
     }
 
     /**
-     * Get erros and send
+     * Capture last PHP error (if any).
      *
      * @param \core\event\base|null $event The event.
      * @return void
      */
-    public static function geterros(?\core\event\base $event = null) {
+    public static function geterros(?\core\event\base $event = null): void {
         $config = get_config('tool_sentry');
         if (isset($config->activate) && $config->activate) {
             \Sentry\captureLastError();
         }
     }
 
-    private static function inject_sentry_js() {
+    /**
+     * Injects Sentry JS loader and init code into the page.
+     *
+     * @return void
+     */
+    private static function inject_sentry_js(): void {
         $config = get_config('tool_sentry');
 
         if (empty($config->activate) || empty($config->javascriptloader)) {
@@ -116,15 +130,13 @@ class helper {
             return;
         }
 
-        $configJson = json_encode($config);
+        $config_json = json_encode($config);
 
         echo <<<JS
 <script src="{$javascriptloader}" crossorigin="anonymous"></script>
 <script>
-  Sentry.init({$configJson});
+  Sentry.init({$config_json});
 </script>
 JS;
-
     }
-
 }
