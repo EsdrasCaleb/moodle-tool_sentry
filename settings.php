@@ -34,9 +34,9 @@ if (is_siteadmin()) {
         $page->add(new admin_setting_heading('tool_sentry/options', get_string('options', 'tool_sentry'),
             get_string('options_desc', 'tool_sentry')));
         $page->add(new admin_setting_configcheckbox('tool_sentry/activate',
-            get_string('activate', 'tool_sentry'), get_string('activate_desc', 'tool_sentry'), 1));
-        $page->add(new admin_setting_configtext('tool_sentry/dsn', get_string('dsn', 'tool_sentry'),
-            get_string('dsn_desc', 'tool_sentry'), 'https://USERCODE@CLIENTCODE.ingest.sentry.io/CLIENTCODE'));
+            get_string('activate', 'tool_sentry'), get_string('activate_desc', 'tool_sentry'), 0));
+        $page->add(new admin_setting_text_with_advanced('tool_sentry/dsn', get_string('dsn', 'tool_sentry'),
+            get_string('dsn_desc', 'tool_sentry'), array('placeholder'=>'https://USERCODE@CLIENTCODE.ingest.sentry.io/CLIENTCODE')));
         $page->add(new admin_setting_configtext('tool_sentry/javascriptloader', get_string('javascriptloader', 'tool_sentry'),
             get_string('javascriptloader_desc', 'tool_sentry'), ''));
         $page->add(new admin_setting_heading('tool_sentry/sentry_options',
