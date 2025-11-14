@@ -62,9 +62,13 @@ if (is_siteadmin()) {
                 ''
             )
         );
-        $PAGE->requires->js(new moodle_url('/admin/tool/sentry/js/connectiontest.js'));
-        $renderer = $PAGE->get_renderer('tool_sentry');
-        $html = $renderer->render_test_buttons();
+        // Only call this when actually on our settings page, to avoid warnings on other pages.
+        $html = '';
+        if (array_key_exists('section', $_GET) && $_GET['section'] == 'sentryconfig') {
+            $PAGE->requires->js(new moodle_url('/admin/tool/sentry/js/connectiontest.js'));
+            $renderer = $PAGE->get_renderer('tool_sentry');
+            $html = $renderer->render_test_buttons();
+        }
 
         $page->add(new admin_setting_heading(
             'integracaosigaa_test_button',
