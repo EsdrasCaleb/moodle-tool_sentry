@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace GuzzleHttp\Psr7;
 
 use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 
@@ -14,18 +13,18 @@ final class Utils
     /**
      * Remove the items given by the keys, case insensitively from the data.
      *
-     * @param string[] $keys
+     * @param (string|int)[] $keys
      */
     public static function caselessRemove(array $keys, array $data): array
     {
         $result = [];
 
         foreach ($keys as &$key) {
-            $key = strtolower($key);
+            $key = strtolower((string) $key);
         }
 
         foreach ($data as $k => $v) {
-            if (!is_string($k) || !in_array(strtolower($k), $keys)) {
+            if (!in_array(strtolower((string) $k), $keys)) {
                 $result[$k] = $v;
             }
         }
@@ -90,6 +89,7 @@ final class Utils
                 }
                 $buffer .= $buf;
             }
+
             return $buffer;
         }
 
@@ -174,7 +174,7 @@ final class Utils
                     $standardPorts = ['http' => 80, 'https' => 443];
                     $scheme = $changes['uri']->getScheme();
                     if (isset($standardPorts[$scheme]) && $port != $standardPorts[$scheme]) {
-                        $changes['set_headers']['Host'] .= ':' . $port;
+                        $changes['set_headers']['Host'] .= ':'.$port;
                     }
                 }
             }
@@ -194,34 +194,68 @@ final class Utils
             $uri = $uri->withQuery($changes['query']);
         }
 
-        if ($request instanceof ServerRequestInterface) {
-            $new = (new ServerRequest(
-                $changes['method'] ?? $request->getMethod(),
-                $uri,
-                $headers,
-                $changes['body'] ?? $request->getBody(),
-                $changes['version'] ?? $request->getProtocolVersion(),
-                $request->getServerParams()
-            ))
-            ->withParsedBody($request->getParsedBody())
-            ->withQueryParams($request->getQueryParams())
-            ->withCookieParams($request->getCookieParams())
-            ->withUploadedFiles($request->getUploadedFiles());
-
-            foreach ($request->getAttributes() as $key => $value) {
-                $new = $new->withAttribute($key, $value);
+        $hasHost = false;
+        foreach (array_keys($headers) as $header) {
+            if (strtolower((string) $header) === 'host') {
+                $hasHost = true;
+                break;
             }
-
-            return $new;
         }
 
-        return new Request(
-            $changes['method'] ?? $request->getMethod(),
-            $uri,
-            $headers,
-            $changes['body'] ?? $request->getBody(),
-            $changes['version'] ?? $request->getProtocolVersion()
-        );
+        // Match Request::__construct() by adding a Host header when one is not provided.
+        if (!$hasHost && $uri->getHost() !== '') {
+            $host = $uri->getHost();
+
+            if (($port = $uri->getPort()) !== null) {
+                $host .= ':'.$port;
+            }
+
+            $headers = ['Host' => [$host]] + $headers;
+        }
+
+        $new = $request;
+
+        if (isset($changes['method'])) {
+            $new = $new->withMethod($changes['method']);
+        }
+
+        if (isset($changes['uri']) || isset($changes['query'])) {
+            $new = $new->withUri($uri, true);
+        }
+
+        if ($headers !== $new->getHeaders()) {
+            foreach (array_keys($new->getHeaders()) as $header) {
+                /** @var RequestInterface */
+                $new = $new->withoutHeader((string) $header);
+            }
+
+            $addedHeaders = [];
+            foreach ($headers as $header => $value) {
+                $header = (string) $header;
+                $normalized = strtolower($header);
+
+                if (isset($addedHeaders[$normalized])) {
+                    /** @var RequestInterface */
+                    $new = $new->withAddedHeader($addedHeaders[$normalized], $value);
+                } else {
+                    /** @var RequestInterface */
+                    $new = $new->withHeader($header, $value);
+                    $addedHeaders[$normalized] = $header;
+                }
+            }
+        }
+
+        if (isset($changes['body'])) {
+            /** @var RequestInterface */
+            $new = $new->withBody(self::streamFor($changes['body']));
+        }
+
+        if (isset($changes['version'])) {
+            /** @var RequestInterface */
+            $new = $new->withProtocolVersion($changes['version']);
+        }
+
+        return $new;
     }
 
     /**
@@ -247,6 +281,20 @@ final class Utils
         }
 
         return $buffer;
+    }
+
+    /**
+     * Redact the password in the user info part of a URI.
+     */
+    public static function redactUserInfo(UriInterface $uri): UriInterface
+    {
+        $userInfo = $uri->getUserInfo();
+
+        if (false !== ($pos = \strpos($userInfo, ':'))) {
+            return $uri->withUserInfo(\substr($userInfo, 0, $pos), '***');
+        }
+
+        return $uri;
     }
 
     /**
@@ -291,6 +339,7 @@ final class Utils
                 fwrite($stream, (string) $resource);
                 fseek($stream, 0);
             }
+
             return new Stream($stream, $options);
         }
 
@@ -308,6 +357,7 @@ final class Utils
                     fseek($stream, 0);
                     $resource = $stream;
                 }
+
                 return new Stream($resource, $options);
             case 'object':
                 /** @var object $resource */
@@ -320,6 +370,7 @@ final class Utils
                         }
                         $result = $resource->current();
                         $resource->next();
+
                         return $result;
                     }, $options);
                 } elseif (method_exists($resource, '__toString')) {
@@ -334,7 +385,7 @@ final class Utils
             return new PumpStream($resource, $options);
         }
 
-        throw new \InvalidArgumentException('Invalid resource type: ' . gettype($resource));
+        throw new \InvalidArgumentException('Invalid resource type: '.gettype($resource));
     }
 
     /**
@@ -379,7 +430,7 @@ final class Utils
         restore_error_handler();
 
         if ($ex) {
-            /** @var $ex \RuntimeException */
+            /** @var \RuntimeException $ex */
             throw $ex;
         }
 
@@ -426,7 +477,7 @@ final class Utils
         restore_error_handler();
 
         if ($ex) {
-            /** @var $ex \RuntimeException */
+            /** @var \RuntimeException $ex */
             throw $ex;
         }
 

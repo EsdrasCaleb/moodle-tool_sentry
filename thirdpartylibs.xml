@@ -2,9 +2,9 @@
 <libraries>
     <library>
         <location>vendor</location>
-        <name>Sentry SDK</name>
-        <version>3.3</version>
-        <license>Apache</license>
-        <licenseversion>2.0</licenseversion>
+        <name>sentry-php</name>
+        <version>4.27.0</version>
+        <license>MIT</license>
+        <repository>https://github.com/getsentry/sentry-php</repository>
     </library>
 </libraries>

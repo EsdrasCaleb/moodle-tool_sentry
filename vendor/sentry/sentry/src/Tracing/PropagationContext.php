@@ -6,10 +6,11 @@ namespace Sentry\Tracing;
 
 use Sentry\SentrySdk;
 use Sentry\State\Scope;
+use Sentry\Tracing\Traits\TraceHeaderParserTrait;
 
 final class PropagationContext
 {
-    private const TRACEPARENT_HEADER_REGEX = '/^[ \\t]*(?<trace_id>[0-9a-f]{32})?-?(?<span_id>[0-9a-f]{16})?-?(?<sampled>[01])?[ \\t]*$/i';
+    use TraceHeaderParserTrait;
 
     /**
      * @var TraceId The trace id
@@ -27,6 +28,16 @@ final class PropagationContext
     private $parentSpanId;
 
     /**
+     * @var bool|null The parent's sampling decision
+     */
+    private $parentSampled;
+
+    /**
+     * @var float|null
+     */
+    private $sampleRand;
+
+    /**
      * @var DynamicSamplingContext|null The dynamic sampling context
      */
     private $dynamicSamplingContext;
@@ -42,6 +53,8 @@ final class PropagationContext
         $context->traceId = TraceId::generate();
         $context->spanId = SpanId::generate();
         $context->parentSpanId = null;
+        $context->parentSampled = null;
+        $context->sampleRand = round(mt_rand(0, mt_getrandmax() - 1) / mt_getrandmax(), 6);
         $context->dynamicSamplingContext = null;
 
         return $context;
@@ -49,12 +62,12 @@ final class PropagationContext
 
     public static function fromHeaders(string $sentryTraceHeader, string $baggageHeader): self
     {
-        return self::parseTraceAndBaggage($sentryTraceHeader, $baggageHeader);
+        return self::parseTraceparentAndBaggage($sentryTraceHeader, $baggageHeader);
     }
 
     public static function fromEnvironment(string $sentryTrace, string $baggage): self
     {
-        return self::parseTraceAndBaggage($sentryTrace, $baggage);
+        return self::parseTraceparentAndBaggage($sentryTrace, $baggage);
     }
 
     /**
@@ -62,7 +75,17 @@ final class PropagationContext
      */
     public function toTraceparent(): string
     {
-        return sprintf('%s-%s', (string) $this->traceId, (string) $this->spanId);
+        return \sprintf('%s-%s', (string) $this->traceId, (string) $this->spanId);
+    }
+
+    /**
+     * Returns a string that can be used for the W3C `traceparent` header & meta tag.
+     *
+     * @deprecated since version 4.12. To be removed in version 5.0.
+     */
+    public function toW3CTraceparent(): string
+    {
+        return '';
     }
 
     /**
@@ -70,14 +93,14 @@ final class PropagationContext
      */
     public function toBaggage(): string
     {
-        if (null === $this->dynamicSamplingContext) {
+        if ($this->dynamicSamplingContext === null) {
             $hub = SentrySdk::getCurrentHub();
             $client = $hub->getClient();
 
-            if (null !== $client) {
+            if ($client !== null) {
                 $options = $client->getOptions();
 
-                if (null !== $options) {
+                if ($options !== null) {
                     $hub->configureScope(function (Scope $scope) use ($options) {
                         $this->dynamicSamplingContext = DynamicSamplingContext::fromOptions($options, $scope);
                     });
@@ -89,7 +112,7 @@ final class PropagationContext
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{trace_id: string, span_id: string, parent_span_id?: string}
      */
     public function getTraceContext(): array
     {
@@ -98,7 +121,7 @@ final class PropagationContext
             'span_id' => (string) $this->spanId,
         ];
 
-        if (null !== $this->parentSpanId) {
+        if ($this->parentSpanId !== null) {
             $result['parent_span_id'] = (string) $this->parentSpanId;
         }
 
@@ -130,9 +153,11 @@ final class PropagationContext
         return $this->spanId;
     }
 
-    public function setSpanId(SpanId $spanId): void
+    public function setSpanId(SpanId $spanId): self
     {
         $this->spanId = $spanId;
+
+        return $this;
     }
 
     public function getDynamicSamplingContext(): ?DynamicSamplingContext
@@ -140,41 +165,48 @@ final class PropagationContext
         return $this->dynamicSamplingContext;
     }
 
-    public function setDynamicSamplingContext(DynamicSamplingContext $dynamicSamplingContext): void
+    public function setDynamicSamplingContext(DynamicSamplingContext $dynamicSamplingContext): self
     {
         $this->dynamicSamplingContext = $dynamicSamplingContext;
+
+        return $this;
     }
 
-    private static function parseTraceAndBaggage(string $sentryTrace, string $baggage): self
+    public function getSampleRand(): ?float
+    {
+        return $this->sampleRand;
+    }
+
+    public function setSampleRand(?float $sampleRand): self
+    {
+        $this->sampleRand = $sampleRand;
+
+        return $this;
+    }
+
+    private static function parseTraceparentAndBaggage(string $traceparent, string $baggage): self
     {
         $context = self::fromDefaults();
-        $hasSentryTrace = false;
+        $parsedData = self::parseTraceAndBaggageHeaders($traceparent, $baggage);
 
-        if (preg_match(self::TRACEPARENT_HEADER_REGEX, $sentryTrace, $matches)) {
-            if (!empty($matches['trace_id'])) {
-                $context->traceId = new TraceId($matches['trace_id']);
-                $hasSentryTrace = true;
-            }
-
-            if (!empty($matches['span_id'])) {
-                $context->parentSpanId = new SpanId($matches['span_id']);
-                $hasSentryTrace = true;
-            }
+        if ($parsedData['traceId'] !== null) {
+            $context->traceId = $parsedData['traceId'];
         }
 
-        $samplingContext = DynamicSamplingContext::fromHeader($baggage);
-
-        if ($hasSentryTrace && !$samplingContext->hasEntries()) {
-            // The request comes from an old SDK which does not support Dynamic Sampling.
-            // Propagate the Dynamic Sampling Context as is, but frozen, even without sentry-* entries.
-            $samplingContext->freeze();
-            $context->dynamicSamplingContext = $samplingContext;
+        if ($parsedData['parentSpanId'] !== null) {
+            $context->parentSpanId = $parsedData['parentSpanId'];
         }
 
-        if ($hasSentryTrace && $samplingContext->hasEntries()) {
-            // The baggage header contains Dynamic Sampling Context data from an upstream SDK.
-            // Propagate this Dynamic Sampling Context.
-            $context->dynamicSamplingContext = $samplingContext;
+        if ($parsedData['parentSampled'] !== null) {
+            $context->parentSampled = $parsedData['parentSampled'];
+        }
+
+        if ($parsedData['dynamicSamplingContext'] !== null) {
+            $context->dynamicSamplingContext = $parsedData['dynamicSamplingContext'];
+        }
+
+        if ($parsedData['sampleRand'] !== null) {
+            $context->sampleRand = $parsedData['sampleRand'];
         }
 
         return $context;
