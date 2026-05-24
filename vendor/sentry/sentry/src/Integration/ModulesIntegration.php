@@ -32,7 +32,7 @@ final class ModulesIntegration implements IntegrationInterface
 
             // The integration could be bound to a client that is not the one
             // attached to the current hub. If this is the case, bail out
-            if (null !== $integration) {
+            if ($integration !== null) {
                 $event->setModules(self::getComposerPackages());
             }
 
@@ -69,7 +69,10 @@ final class ModulesIntegration implements IntegrationInterface
 
         if (class_exists(Versions::class)) {
             // BC layer for Composer 1, using a transient dependency
-            return array_keys(Versions::VERSIONS);
+            /** @var string[] $packages */
+            $packages = array_keys(Versions::VERSIONS);
+
+            return $packages;
         }
 
         // this should not happen

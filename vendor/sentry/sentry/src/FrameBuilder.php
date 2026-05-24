@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Sentry;
 
 use Sentry\Serializer\RepresentationSerializerInterface;
+use Sentry\Util\PrefixStripper;
 
 /**
  * This class builds a {@see Frame} object out of a backtrace's raw frame.
  *
  * @internal
  *
- * @psalm-type StacktraceFrame array{
+ * @phpstan-type StacktraceFrame array{
  *     function?: string,
  *     line?: int,
  *     file?: string,
@@ -22,6 +23,8 @@ use Sentry\Serializer\RepresentationSerializerInterface;
  */
 final class FrameBuilder
 {
+    use PrefixStripper;
+
     /**
      * @var Options The SDK client options
      */
@@ -51,7 +54,7 @@ final class FrameBuilder
      * @param int                  $line           The line at which the frame originated
      * @param array<string, mixed> $backtraceFrame The raw frame
      *
-     * @psalm-param StacktraceFrame $backtraceFrame
+     * @phpstan-param StacktraceFrame $backtraceFrame
      */
     public function buildFromBacktraceFrame(string $file, int $line, array $backtraceFrame): Frame
     {
@@ -66,19 +69,37 @@ final class FrameBuilder
 
         $functionName = null;
         $rawFunctionName = null;
-        $strippedFilePath = $this->stripPrefixFromFilePath($file);
+        $strippedFilePath = $this->stripPrefixFromFilePath($this->options, $file);
 
         if (isset($backtraceFrame['class']) && isset($backtraceFrame['function'])) {
             $functionName = $backtraceFrame['class'];
 
-            if (str_starts_with($functionName, Frame::ANONYMOUS_CLASS_PREFIX)) {
-                $functionName = Frame::ANONYMOUS_CLASS_PREFIX . $this->stripPrefixFromFilePath(substr($backtraceFrame['class'], \strlen(Frame::ANONYMOUS_CLASS_PREFIX)));
+            // Skip if no prefixes are set
+            if ($this->options->getPrefixes()) {
+                $prefixStrippedFunctionName = preg_replace_callback('/@anonymous\\x00([^:]+)(:.*)?/', function (array $matches) {
+                    return "@anonymous\x00" . $this->stripPrefixFromFilePath($this->options, $matches[1]) . ($matches[2] ?? '');
+                }, $functionName);
+
+                if ($prefixStrippedFunctionName) {
+                    $functionName = $prefixStrippedFunctionName;
+                }
             }
 
-            $rawFunctionName = sprintf('%s::%s', $backtraceFrame['class'], $backtraceFrame['function']);
-            $functionName = sprintf('%s::%s', preg_replace('/(?::\d+\$|0x)[a-fA-F0-9]+$/', '', $functionName), $backtraceFrame['function']);
+            $rawFunctionName = \sprintf('%s::%s', $backtraceFrame['class'], $backtraceFrame['function']);
+            $functionName = \sprintf('%s::%s', preg_replace('/(?::\d+\$|0x)[a-fA-F0-9]+$/', '', $functionName), $backtraceFrame['function']);
         } elseif (isset($backtraceFrame['function'])) {
             $functionName = $backtraceFrame['function'];
+        }
+
+        // Starting with PHP 8.4 a closure function call is reported as "{closure:filename:line}" instead of just "{closure}", properly strip the prefixes from that format
+        if (\PHP_VERSION_ID >= 80400 && $functionName !== null && $this->options->getPrefixes()) {
+            $prefixStrippedFunctionName = preg_replace_callback('/^\{closure:(.*?):(\d+)}$/', function (array $matches) {
+                return '{closure:' . $this->stripPrefixFromFilePath($this->options, $matches[1]) . ':' . $matches[2] . '}';
+            }, $functionName);
+
+            if ($prefixStrippedFunctionName) {
+                $functionName = $prefixStrippedFunctionName;
+            }
         }
 
         return new Frame(
@@ -86,26 +107,10 @@ final class FrameBuilder
             $strippedFilePath,
             $line,
             $rawFunctionName,
-            Frame::INTERNAL_FRAME_FILENAME !== $file ? $file : null,
+            $file !== Frame::INTERNAL_FRAME_FILENAME ? $file : null,
             $this->getFunctionArguments($backtraceFrame),
             $this->isFrameInApp($file, $functionName)
         );
-    }
-
-    /**
-     * Removes from the given file path the specified prefixes.
-     *
-     * @param string $filePath The path to the file
-     */
-    private function stripPrefixFromFilePath(string $filePath): string
-    {
-        foreach ($this->options->getPrefixes() as $prefix) {
-            if (str_starts_with($filePath, $prefix)) {
-                return mb_substr($filePath, mb_strlen($prefix));
-            }
-        }
-
-        return $filePath;
     }
 
     /**
@@ -116,11 +121,11 @@ final class FrameBuilder
      */
     private function isFrameInApp(string $file, ?string $functionName): bool
     {
-        if (Frame::INTERNAL_FRAME_FILENAME === $file) {
+        if ($file === Frame::INTERNAL_FRAME_FILENAME) {
             return false;
         }
 
-        if (null !== $functionName && str_starts_with($functionName, 'Sentry\\')) {
+        if ($functionName !== null && substr($functionName, 0, \strlen('Sentry\\')) === 'Sentry\\') {
             return false;
         }
 
@@ -130,7 +135,7 @@ final class FrameBuilder
         $isInApp = true;
 
         foreach ($excludedAppPaths as $excludedAppPath) {
-            if (str_starts_with($absoluteFilePath, $excludedAppPath)) {
+            if (mb_substr($absoluteFilePath, 0, mb_strlen($excludedAppPath)) === $excludedAppPath) {
                 $isInApp = false;
 
                 break;
@@ -138,7 +143,7 @@ final class FrameBuilder
         }
 
         foreach ($includedAppPaths as $includedAppPath) {
-            if (str_starts_with($absoluteFilePath, $includedAppPath)) {
+            if (mb_substr($absoluteFilePath, 0, mb_strlen($includedAppPath)) === $includedAppPath) {
                 $isInApp = true;
 
                 break;
@@ -153,9 +158,9 @@ final class FrameBuilder
      *
      * @param array<string, mixed> $backtraceFrame The frame data
      *
-     * @return array<string, mixed>
+     * @phpstan-param StacktraceFrame $backtraceFrame
      *
-     * @psalm-param StacktraceFrame $backtraceFrame
+     * @return array<string, mixed>
      */
     private function getFunctionArguments(array $backtraceFrame): array
     {
@@ -169,12 +174,12 @@ final class FrameBuilder
             if (isset($backtraceFrame['class'])) {
                 if (method_exists($backtraceFrame['class'], $backtraceFrame['function'])) {
                     $reflectionFunction = new \ReflectionMethod($backtraceFrame['class'], $backtraceFrame['function']);
-                } elseif (isset($backtraceFrame['type']) && '::' === $backtraceFrame['type']) {
+                } elseif (isset($backtraceFrame['type']) && $backtraceFrame['type'] === '::') {
                     $reflectionFunction = new \ReflectionMethod($backtraceFrame['class'], '__callStatic');
                 } else {
                     $reflectionFunction = new \ReflectionMethod($backtraceFrame['class'], '__call');
                 }
-            } elseif (!\in_array($backtraceFrame['function'], ['{closure}', '__lambda_func'], true) && \function_exists($backtraceFrame['function'])) {
+            } elseif ($backtraceFrame['function'] !== '__lambda_func' && !str_starts_with($backtraceFrame['function'], '{closure') && \function_exists($backtraceFrame['function'])) {
                 $reflectionFunction = new \ReflectionFunction($backtraceFrame['function']);
             }
         } catch (\ReflectionException $e) {
@@ -183,7 +188,7 @@ final class FrameBuilder
 
         $argumentValues = [];
 
-        if (null !== $reflectionFunction) {
+        if ($reflectionFunction !== null) {
             $argumentValues = $this->getFunctionArgumentValues($reflectionFunction, $backtraceFrame['args']);
         } else {
             foreach ($backtraceFrame['args'] as $parameterPosition => $parameterValue) {
@@ -214,7 +219,15 @@ final class FrameBuilder
         foreach ($reflectionFunction->getParameters() as $reflectionParameter) {
             $parameterPosition = $reflectionParameter->getPosition();
 
-            if (!isset($backtraceFrameArgs[$parameterPosition])) {
+            if ($reflectionParameter->isVariadic()) {
+                // For variadic parameters, collect all remaining arguments into an array
+                $variadicArgs = \array_slice($backtraceFrameArgs, $parameterPosition);
+                $argumentValues[$reflectionParameter->getName()] = array_values($variadicArgs);
+                // Variadic parameter is always the last one, so we can break
+                break;
+            }
+
+            if (!\array_key_exists($parameterPosition, $backtraceFrameArgs)) {
                 continue;
             }
 

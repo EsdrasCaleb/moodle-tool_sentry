@@ -13,6 +13,9 @@ final class Frame
 {
     public const INTERNAL_FRAME_FILENAME = '[internal]';
 
+    /**
+     * @deprecated This constant is deprecated and will be removed in 5.x.
+     */
     public const ANONYMOUS_CLASS_PREFIX = "class@anonymous\x00";
 
     /**
@@ -153,9 +156,11 @@ final class Frame
      *
      * @param string[] $preContext The source code lines
      */
-    public function setPreContext(array $preContext): void
+    public function setPreContext(array $preContext): self
     {
         $this->preContext = $preContext;
+
+        return $this;
     }
 
     /**
@@ -173,9 +178,11 @@ final class Frame
      *
      * @param string|null $contextLine The source code line
      */
-    public function setContextLine(?string $contextLine): void
+    public function setContextLine(?string $contextLine): self
     {
         $this->contextLine = $contextLine;
+
+        return $this;
     }
 
     /**
@@ -193,9 +200,11 @@ final class Frame
      *
      * @param string[] $postContext The source code lines
      */
-    public function setPostContext(array $postContext): void
+    public function setPostContext(array $postContext): self
     {
         $this->postContext = $postContext;
+
+        return $this;
     }
 
     /**
@@ -213,9 +222,11 @@ final class Frame
      *
      * @param bool $inApp flag indicating whether the frame is application-related
      */
-    public function setIsInApp(bool $inApp): void
+    public function setIsInApp(bool $inApp): self
     {
         $this->inApp = $inApp;
+
+        return $this;
     }
 
     /**
@@ -235,9 +246,11 @@ final class Frame
      *
      * @param array<string, mixed> $vars The variables
      */
-    public function setVars(array $vars): void
+    public function setVars(array $vars): self
     {
         $this->vars = $vars;
+
+        return $this;
     }
 
     /**
@@ -245,6 +258,6 @@ final class Frame
      */
     public function isInternal(): bool
     {
-        return self::INTERNAL_FRAME_FILENAME === $this->file;
+        return $this->file === self::INTERNAL_FRAME_FILENAME;
     }
 }
