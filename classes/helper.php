@@ -38,7 +38,6 @@ require_once($CFG->dirroot . '/admin/tool/sentry/vendor/autoload.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class helper {
-
     /** @var bool Whether Sentry has already been initialized. */
     private static $initialized = false;
 
@@ -141,7 +140,7 @@ class helper {
         }
 
         // Try to get the currently running task from Moodle's task manager.
-        // \core\task\manager::get_running_task() is available since Moodle 3.7.
+        // get_running_task() is available since Moodle 3.7.
         if (!method_exists('\core\task\manager', 'get_running_task')) {
             return;
         }
@@ -159,7 +158,7 @@ class helper {
         $tasktype   = $isadhoc ? 'adhoc' : 'scheduled';
 
         // Build a synthetic URL that is human-readable and filterable in Sentry.
-        // Format: cron://hostname/task/component/ShortClassName
+        // Format: cron://hostname/task/component/ShortClassName.
         $url = 'cron://' . $hostname . '/task/' . $component . '/' . $shortclass;
 
         $queryparams = [];
@@ -171,12 +170,12 @@ class helper {
             $scope->setTag('task_id', (string) $taskid);
         }
 
-        // The cron log id is stored in the global $CRON_TASK_LOGID when available
-        // (set by \core\task\logmanager since Moodle 3.7).
+        // The cron log id is available via \core\task\logmanager since Moodle 3.7.
         if (!empty($CFG->task_logmode) && defined('PHPUNIT_TEST') === false) {
-            // Retrieve the log id via the task log manager if possible.
-            if (class_exists('\core\task\logmanager') &&
-                    method_exists('\core\task\logmanager', 'get_current_logid')) {
+            if (
+                class_exists('\core\task\logmanager') &&
+                method_exists('\core\task\logmanager', 'get_current_logid')
+            ) {
                 $logid = \core\task\logmanager::get_current_logid();
                 if ($logid) {
                     $queryparams[] = 'logid=' . $logid;
