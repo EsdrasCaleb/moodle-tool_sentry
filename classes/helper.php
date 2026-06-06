@@ -95,19 +95,19 @@ class helper {
      */
     private static function get_moodle_component(string $file): string {
         $patterns = [
-            '#/mod/([^/]+)/#'                   => 'mod_',
-            '#/blocks/([^/]+)/#'                => 'block_',
-            '#/local/([^/]+)/#'                 => 'local_',
-            '#/admin/tool/([^/]+)/#'            => 'tool_',
+            '#/mod/([^/]+)/#'                    => 'mod_',
+            '#/blocks/([^/]+)/#'                 => 'block_',
+            '#/local/([^/]+)/#'                  => 'local_',
+            '#/admin/tool/([^/]+)/#'             => 'tool_',
             '#/availability/condition/([^/]+)/#' => 'availability_',
-            '#/auth/([^/]+)/#'                  => 'auth_',
-            '#/enrol/([^/]+)/#'                 => 'enrol_',
-            '#/report/([^/]+)/#'                => 'report_',
-            '#/theme/([^/]+)/#'                 => 'theme_',
-            '#/question/type/([^/]+)/#'         => 'qtype_',
-            '#/filter/([^/]+)/#'                => 'filter_',
-            '#/course/format/([^/]+)/#'         => 'format_',
-            '#/grade/report/([^/]+)/#'          => 'gradereport_',
+            '#/auth/([^/]+)/#'                   => 'auth_',
+            '#/enrol/([^/]+)/#'                  => 'enrol_',
+            '#/report/([^/]+)/#'                 => 'report_',
+            '#/theme/([^/]+)/#'                  => 'theme_',
+            '#/question/type/([^/]+)/#'          => 'qtype_',
+            '#/filter/([^/]+)/#'                 => 'filter_',
+            '#/course/format/([^/]+)/#'          => 'format_',
+            '#/grade/report/([^/]+)/#'           => 'gradereport_',
         ];
         foreach ($patterns as $pattern => $prefix) {
             if (preg_match($pattern, $file, $m)) {
@@ -115,6 +115,90 @@ class helper {
             }
         }
         return 'core';
+    }
+
+    /**
+     * Detects whether the current execution is a Moodle task (cron/adhoc)
+     * and, if so, enriches the Sentry scope with task-specific context:
+     *
+     *  - A synthetic URL of the form:
+     *      cron://hostname/task/component/classname?id=123&logid=456
+     *    so that Sentry has a non-empty, searchable "url" field.
+     *  - Tags: task_type (scheduled|adhoc), task_class, task_component,
+     *          task_id (adhoc only), task_logid (when available).
+     *
+     * Safe to call even outside CLI; if no task is running it does nothing.
+     *
+     * @param \Sentry\State\Scope $scope Active Sentry scope.
+     * @return void
+     */
+    private static function set_task_context(\Sentry\State\Scope $scope): void {
+        global $CFG;
+
+        // Only meaningful during CLI/cron execution.
+        if (!defined('CLI_SCRIPT') || !CLI_SCRIPT) {
+            return;
+        }
+
+        // Try to get the currently running task from Moodle's task manager.
+        // \core\task\manager::get_running_task() is available since Moodle 3.7.
+        if (!method_exists('\core\task\manager', 'get_running_task')) {
+            return;
+        }
+
+        $task = \core\task\manager::get_running_task();
+        if ($task === null) {
+            return;
+        }
+
+        $classname  = get_class($task);
+        $shortclass = ltrim(strrchr($classname, '\\'), '\\') ?: $classname;
+        $component  = $task->get_component();
+        $hostname   = gethostname() ?: 'localhost';
+        $isadhoc    = ($task instanceof \core\task\adhoc_task);
+        $tasktype   = $isadhoc ? 'adhoc' : 'scheduled';
+
+        // Build a synthetic URL that is human-readable and filterable in Sentry.
+        // Format: cron://hostname/task/component/ShortClassName
+        $url = 'cron://' . $hostname . '/task/' . $component . '/' . $shortclass;
+
+        $queryparams = [];
+
+        // Adhoc tasks have a database id (\core\task\adhoc_task::get_id()).
+        if ($isadhoc && method_exists($task, 'get_id') && $task->get_id()) {
+            $taskid = $task->get_id();
+            $queryparams[] = 'id=' . $taskid;
+            $scope->setTag('task_id', (string) $taskid);
+        }
+
+        // The cron log id is stored in the global $CRON_TASK_LOGID when available
+        // (set by \core\task\logmanager since Moodle 3.7).
+        if (!empty($CFG->task_logmode) && defined('PHPUNIT_TEST') === false) {
+            // Retrieve the log id via the task log manager if possible.
+            if (class_exists('\core\task\logmanager') &&
+                    method_exists('\core\task\logmanager', 'get_current_logid')) {
+                $logid = \core\task\logmanager::get_current_logid();
+                if ($logid) {
+                    $queryparams[] = 'logid=' . $logid;
+                    $scope->setTag('task_logid', (string) $logid);
+                }
+            }
+        }
+
+        if ($queryparams) {
+            $url .= '?' . implode('&', $queryparams);
+        }
+
+        // Set the synthetic URL so Sentry shows it in the "Request" section.
+        $scope->setTag('url', $url);
+        $scope->setTag('task_type', $tasktype);
+        $scope->setTag('task_class', $classname);
+        $scope->setTag('task_component', $component);
+
+        // Also populate the request context so the URL appears in Sentry UI.
+        \Sentry\configureScope(function (\Sentry\State\Scope $s) use ($url): void {
+            $s->setContext('task', ['url' => $url]);
+        });
     }
 
     /**
@@ -136,6 +220,11 @@ class helper {
                 self::$initialized = true;
                 self::inject_sentry_js();
                 \Sentry\init($sentryconfig);
+
+                // Enrich scope with task context when running as cron/adhoc.
+                \Sentry\configureScope(function (\Sentry\State\Scope $scope): void {
+                    self::set_task_context($scope);
+                });
 
                 // Register a custom error handler so Sentry captures the real
                 // origin of each error, not the location of this helper.
