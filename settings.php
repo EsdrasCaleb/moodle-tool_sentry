@@ -208,7 +208,8 @@ if (is_siteadmin()) {
                     E_USER_ERROR        => 'E_USER_ERROR',
                     E_USER_WARNING      => 'E_USER_WARNING',
                     E_USER_NOTICE       => 'E_USER_NOTICE',
-                    E_STRICT            => 'E_STRICT',
+                    // This is \E_STRICT which has been deprecated in PHP 8.4 so we should not reference it directly.
+                    2048 => 'Runtime Notice',
                     E_RECOVERABLE_ERROR => 'E_RECOVERABLE_ERROR',
                     E_DEPRECATED        => 'E_DEPRECATED',
                     E_USER_DEPRECATED   => 'E_USER_DEPRECATED',
