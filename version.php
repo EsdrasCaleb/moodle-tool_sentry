@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Plugin version.
-$plugin->version = 2026052000;
+$plugin->version = 2026060600;
 
 // Required Moodle version.
 $plugin->requires = 2022112800;
@@ -38,4 +38,4 @@ $plugin->component = 'tool_sentry';
 $plugin->maturity = MATURITY_STABLE;
 
 // User-friendly version number.
-$plugin->release = '1.0.2';
+$plugin->release = '1.0.3';
