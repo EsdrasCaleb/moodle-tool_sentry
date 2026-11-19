@@ -6,9 +6,18 @@ Simple sentry plugin to moodle.
 | Plugin version | Moodle | PHP |
 | --- | --- | --- |
 | 5.3.x (branch `TOOL_SENTRY_5_3`) | 5.3 | 8.3+ |
-| 1.0.x (branch `TOOL_SENTRY_1_0`) | 4.x | 8.1+ |
+| 1.0.x (branch `TOOL_SENTRY_1_0`) | 4.1 and 4.5 | 8.1+ |
 
-Releases are published automatically when a `vX.Y.Z` tag is pushed: see `.github/workflows/release.yml`.
+## Branches and releases
+
+- `main`: development. Every change enters `main` by pull request, with green CI.
+- `TOOL_SENTRY_5_3`: 5.3.x line (Moodle 5.3). It receives `main` by pull request (`main` -> `TOOL_SENTRY_5_3`).
+- `TOOL_SENTRY_1_0`: 1.0.x line (Moodle 4.1 and 4.5). Fixes only, by pull request to this branch.
+
+To release, bump `$plugin->version` and `$plugin->release`, add the `## <release> - <date>` section to
+`CHANGELOG.md`, merge into the line branch and push the `vX.Y.Z` tag on its last commit. The `release.yml` workflow
+checks the tag, the changelog and the CI, publishes the GitHub Release with the ZIP and sends the version to the
+Moodle Marketplace.
 
 ## How Sentry is started
 
