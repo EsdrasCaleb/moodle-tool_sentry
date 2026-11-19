@@ -41,7 +41,7 @@ jobs:
             moodle-branch: 'MOODLE_401_STABLE'
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           path: plugin
 
