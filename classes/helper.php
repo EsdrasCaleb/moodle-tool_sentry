@@ -38,6 +38,15 @@ require_once($CFG->dirroot . '/admin/tool/sentry/vendor/autoload.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class helper {
+    /** @var string Sentry started before Moodle by prepend.php (auto_prepend_file + SENTRY_DSN). */
+    public const MODE_PREPEND = 'prepend';
+
+    /** @var string Sentry started by this plugin, with the settings saved in the administration pages. */
+    public const MODE_PLUGIN = 'plugin';
+
+    /** @var string Sentry disabled. */
+    public const MODE_NONE = 'none';
+
     /** @var bool Whether Sentry has already been initialized. */
     private static $initialized = false;
 
@@ -93,27 +102,7 @@ class helper {
      * @return string Moodle component name or 'core'.
      */
     private static function get_moodle_component(string $file): string {
-        $patterns = [
-            '#/mod/([^/]+)/#'                    => 'mod_',
-            '#/blocks/([^/]+)/#'                 => 'block_',
-            '#/local/([^/]+)/#'                  => 'local_',
-            '#/admin/tool/([^/]+)/#'             => 'tool_',
-            '#/availability/condition/([^/]+)/#' => 'availability_',
-            '#/auth/([^/]+)/#'                   => 'auth_',
-            '#/enrol/([^/]+)/#'                  => 'enrol_',
-            '#/report/([^/]+)/#'                 => 'report_',
-            '#/theme/([^/]+)/#'                  => 'theme_',
-            '#/question/type/([^/]+)/#'          => 'qtype_',
-            '#/filter/([^/]+)/#'                 => 'filter_',
-            '#/course/format/([^/]+)/#'          => 'format_',
-            '#/grade/report/([^/]+)/#'           => 'gradereport_',
-        ];
-        foreach ($patterns as $pattern => $prefix) {
-            if (preg_match($pattern, $file, $m)) {
-                return $prefix . $m[1];
-            }
-        }
-        return 'core';
+        return \tool_sentry\local\prepend::component($file);
     }
 
     /**
@@ -201,6 +190,20 @@ class helper {
     }
 
     /**
+     * How Sentry must be started in this request.
+     *
+     * The prepend mode wins: when prepend.php already started the SDK, the plugin must not start it again.
+     *
+     * @return string One of the MODE_* constants.
+     */
+    public static function get_mode(): string {
+        if (\tool_sentry\local\prepend::is_active()) {
+            return self::MODE_PREPEND;
+        }
+        return self::get_clean_config(get_config('tool_sentry')) ? self::MODE_PLUGIN : self::MODE_NONE;
+    }
+
+    /**
      * Initialize sentry.
      *
      * Registers a custom PHP error handler so that Sentry receives the real
@@ -211,6 +214,16 @@ class helper {
      * @return void
      */
     public static function init(?\core\event\base $event = null): void {
+        if (self::get_mode() === self::MODE_PREPEND) {
+            // The PHP SDK was already started by prepend.php, with the options of the environment variables.
+            // Only the browser loader, when configured in the settings, is still added here.
+            if (!self::$initialized) {
+                self::$initialized = true;
+                self::inject_sentry_js();
+            }
+            return;
+        }
+
         $config = get_config('tool_sentry');
         $sentryconfig = self::get_clean_config($config);
 
@@ -255,6 +268,10 @@ class helper {
      * @return void
      */
     public static function geterros(?\core\event\base $event = null): void {
+        if (self::get_mode() === self::MODE_PREPEND) {
+            // The SDK started by prepend.php already captures fatal errors on shutdown.
+            return;
+        }
         $config = get_config('tool_sentry');
         if (isset($config->activate) && $config->activate) {
             $last = error_get_last();
