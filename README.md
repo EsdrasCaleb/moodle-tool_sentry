@@ -5,8 +5,10 @@ Simple sentry plugin to moodle.
 
 | Plugin version | Moodle | PHP |
 | --- | --- | --- |
-| 5.3.x | 5.3 | 8.3+ |
-| 1.0.x | 4.x | 8.2+ (the bundled SDK dependencies require 8.2) |
+| 5.3.x (branch `TOOL_SENTRY_5_3`) | 5.3 | 8.3+ |
+| 1.0.x (branch `TOOL_SENTRY_1_0`) | 4.x | 8.1+ |
+
+Releases are published automatically when a `vX.Y.Z` tag is pushed: see `.github/workflows/release.yml`.
 
 ## How Sentry is started
 

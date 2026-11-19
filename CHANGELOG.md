@@ -3,7 +3,7 @@
 ## 5.3.0 - 2026-11-19
 
 New version line for **Moodle 5.3** only (`requires` 5.3, `supported` [503, 503], PHP 8.3+). Sites on Moodle 4.x keep
-using the 1.0.x line, which is unchanged.
+using the 1.0.x line (branch `TOOL_SENTRY_1_0`).
 
 ### Added
 - Prepend mode: `admin/tool/sentry/prepend.php` (`public/admin/tool/sentry/prepend.php` in the Moodle tree), set in
@@ -14,6 +14,7 @@ using the 1.0.x line, which is unchanged.
   (`core\hook\after_config`).
 - Notice on the settings page when Sentry was started by the prepend file.
 - PHPUnit tests for the choice of the mode.
+- Automatic release on `vX.Y.Z` tags: GitHub Release with the ZIP and upload to the Moodle Marketplace.
 
 ### Changed
 - Sentry PHP SDK 4.27.0 → 4.38.0. `composer.json` sets `config.platform.php` to 8.3.0, the minimum of Moodle 5.3.
