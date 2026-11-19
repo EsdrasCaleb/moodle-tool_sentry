@@ -101,14 +101,4 @@ class OptionsResolverIntrospector
     {
         return ($this->get)('deprecated', $option, \sprintf('No deprecation was set for the "%s" option.', $option));
     }
-
-    /**
-     * @return \Closure[]
-     *
-     * @throws NoConfigurationException when no nested option is configured
-     */
-    public function getNestedOptions(string $option): array
-    {
-        return ($this->get)('nested', $option, \sprintf('No nested option was set for the "%s" option.', $option));
-    }
 }
