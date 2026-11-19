@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sentry\Tracing;
 
 use Sentry\SentrySdk;
+use Sentry\State\HubInterface;
 use Sentry\State\Scope;
 use Sentry\Tracing\Traits\TraceHeaderParserTrait;
 
@@ -91,20 +92,18 @@ final class PropagationContext
     /**
      * Returns a string that can be used for the `baggage` header & meta tag.
      */
-    public function toBaggage(): string
+    public function toBaggage(?HubInterface $hub = null): string
     {
         if ($this->dynamicSamplingContext === null) {
-            $hub = SentrySdk::getCurrentHub();
+            $hub = $hub ?? SentrySdk::getCurrentHub();
             $client = $hub->getClient();
 
             if ($client !== null) {
                 $options = $client->getOptions();
 
-                if ($options !== null) {
-                    $hub->configureScope(function (Scope $scope) use ($options) {
-                        $this->dynamicSamplingContext = DynamicSamplingContext::fromOptions($options, $scope);
-                    });
-                }
+                $hub->configureScope(function (Scope $scope) use ($options) {
+                    $this->dynamicSamplingContext = DynamicSamplingContext::fromOptions($options, $scope);
+                });
             }
         }
 

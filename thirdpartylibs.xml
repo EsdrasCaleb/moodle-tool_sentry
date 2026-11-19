@@ -3,7 +3,7 @@
     <library>
         <location>vendor</location>
         <name>sentry-php</name>
-        <version>4.27.0</version>
+        <version>4.38.0</version>
         <license>MIT</license>
         <repository>https://github.com/getsentry/sentry-php</repository>
     </library>

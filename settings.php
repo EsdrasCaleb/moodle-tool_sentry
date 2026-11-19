@@ -38,6 +38,15 @@ if (is_siteadmin()) {
                 get_string('options_desc', 'tool_sentry')
             )
         );
+        if (\tool_sentry\local\prepend::is_active()) {
+            $page->add(
+                new admin_setting_heading(
+                    'tool_sentry/prepend',
+                    get_string('prepend_active', 'tool_sentry'),
+                    get_string('prepend_active_desc', 'tool_sentry')
+                )
+            );
+        }
         $page->add(
             new admin_setting_configcheckbox(
                 'tool_sentry/activate',

@@ -131,8 +131,8 @@ final class DynamicSamplingContext
 
             [$key, $value] = explode('=', $keyValue, 2);
 
-            if (mb_substr($key, 0, mb_strlen(self::SENTRY_ENTRY_PREFIX)) === self::SENTRY_ENTRY_PREFIX) {
-                $samplingContext->set(rawurldecode(mb_substr($key, mb_strlen(self::SENTRY_ENTRY_PREFIX))), rawurldecode($value));
+            if (strncmp($key, self::SENTRY_ENTRY_PREFIX, \strlen(self::SENTRY_ENTRY_PREFIX)) === 0) {
+                $samplingContext->set(rawurldecode(substr($key, \strlen(self::SENTRY_ENTRY_PREFIX))), rawurldecode($value));
             }
         }
 
@@ -202,14 +202,16 @@ final class DynamicSamplingContext
 
     private static function setOrgOptions(Options $options, DynamicSamplingContext $samplingContext): void
     {
-        if ($options->getDsn() !== null && $options->getDsn()->getPublicKey() !== null) {
-            $samplingContext->set('public_key', $options->getDsn()->getPublicKey());
+        $dsn = $options->getDsn();
+
+        if ($dsn !== null) {
+            $samplingContext->set('public_key', $dsn->getPublicKey());
         }
 
         if ($options->getOrgId() !== null) {
             $samplingContext->set('org_id', (string) $options->getOrgId());
-        } elseif ($options->getDsn() !== null && $options->getDsn()->getOrgId() !== null) {
-            $samplingContext->set('org_id', (string) $options->getDsn()->getOrgId());
+        } elseif ($dsn !== null && $dsn->getOrgId() !== null) {
+            $samplingContext->set('org_id', (string) $dsn->getOrgId());
         }
 
         if ($options->getRelease() !== null) {

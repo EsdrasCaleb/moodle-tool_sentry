@@ -1,10 +1,13 @@
 {
     "require": {
-        "sentry/sentry": "^4.0"
+        "sentry/sentry": "^4.38"
     },
     "config": {
         "allow-plugins": {
             "php-http/discovery": true
+        },
+        "platform": {
+            "php": "8.3.0"
         }
     }
 }
