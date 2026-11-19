@@ -7,11 +7,13 @@ namespace Sentry\Serializer;
 use Sentry\Event;
 use Sentry\EventType;
 use Sentry\Options;
+use Sentry\Serializer\EnvelopItems\AttachmentItem;
 use Sentry\Serializer\EnvelopItems\CheckInItem;
 use Sentry\Serializer\EnvelopItems\ClientReportItem;
 use Sentry\Serializer\EnvelopItems\EventItem;
 use Sentry\Serializer\EnvelopItems\LogsItem;
 use Sentry\Serializer\EnvelopItems\MetricsItem;
+use Sentry\Serializer\EnvelopItems\ProfileChunkItem;
 use Sentry\Serializer\EnvelopItems\ProfileItem;
 use Sentry\Serializer\EnvelopItems\TransactionItem;
 use Sentry\Tracing\DynamicSamplingContext;
@@ -68,11 +70,17 @@ final class PayloadSerializer implements PayloadSerializerInterface
         switch ($event->getType()) {
             case EventType::event():
                 $items[] = EventItem::toEnvelopeItem($event);
+                foreach ($event->getAttachments() as $attachment) {
+                    $items[] = AttachmentItem::toAttachmentItem($attachment);
+                }
                 break;
             case EventType::transaction():
                 $items[] = TransactionItem::toEnvelopeItem($event);
                 if ($event->getSdkMetadata('profile') !== null) {
                     $items[] = ProfileItem::toEnvelopeItem($event);
+                }
+                foreach ($event->getAttachments() as $attachment) {
+                    $items[] = AttachmentItem::toAttachmentItem($attachment);
                 }
                 break;
             case EventType::checkIn():
@@ -83,6 +91,9 @@ final class PayloadSerializer implements PayloadSerializerInterface
                 break;
             case EventType::metrics():
                 $items[] = MetricsItem::toEnvelopeItem($event);
+                break;
+            case EventType::profileChunk():
+                $items[] = ProfileChunkItem::toEnvelopeItem($event);
                 break;
             case EventType::clientReport():
                 $items[] = ClientReportItem::toEnvelopeItem($event);

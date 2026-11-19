@@ -145,6 +145,7 @@ class prepend {
             ? self::DEFAULT_IGNORE_EXCEPTIONS
             : array_values(array_filter(array_map('trim', explode(',', $ignore))));
 
+        // Plugin in <root>/public/admin/tool/sentry: Moodle libraries in public/lib/vendor, Composer in <root>/vendor.
         $pluginroot = dirname(__DIR__, 2);
         $moodleroot = dirname($pluginroot, 3);
 

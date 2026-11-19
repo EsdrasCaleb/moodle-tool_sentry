@@ -6,11 +6,14 @@ namespace Sentry;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Sentry\ClientReport\ClientReportAggregator;
+use Sentry\ClientReport\Reason;
 use Sentry\Integration\IntegrationInterface;
 use Sentry\Integration\IntegrationRegistry;
 use Sentry\Serializer\RepresentationSerializer;
 use Sentry\Serializer\RepresentationSerializerInterface;
 use Sentry\State\Scope;
+use Sentry\Transport\DataCategory;
 use Sentry\Transport\Result;
 use Sentry\Transport\TransportInterface;
 
@@ -32,7 +35,7 @@ class Client implements ClientInterface
     /**
      * The version of the SDK.
      */
-    public const SDK_VERSION = '4.27.0';
+    public const SDK_VERSION = '4.38.0';
 
     /**
      * Regex pattern to detect if a string is a regex pattern (starts and ends with / optionally followed by flags).
@@ -161,6 +164,8 @@ class Client implements ClientInterface
                 ['className' => $className]
             );
 
+            ClientReportAggregator::getInstance()->add(DataCategory::error(), Reason::eventProcessor(), 1);
+
             return null; // short circuit to avoid unnecessary processing
         }
 
@@ -188,7 +193,6 @@ class Client implements ClientInterface
         }
 
         try {
-            /** @var Result $result */
             $result = $this->transport->send($event);
             $event = $result->getEvent();
 
@@ -285,6 +289,16 @@ class Client implements ClientInterface
      */
     private function prepareEvent(Event $event, ?EventHint $hint = null, ?Scope $scope = null): ?Event
     {
+        $sampleRate = $this->options->getSampleRate();
+
+        if (EventType::event() === $event->getType() && $sampleRate < 1 && mt_rand(1, 100) / 100.0 > $sampleRate) {
+            $this->logger->info(\sprintf('The %s will be discarded because it has been sampled.', $this->getEventDescription($event)), ['event' => $event]);
+
+            ClientReportAggregator::getInstance()->addEvent($event, Reason::sampleRate());
+
+            return null;
+        }
+
         if ($hint !== null) {
             if ($hint->exception !== null && empty($event->getExceptions())) {
                 $this->addThrowableToEvent($event, $hint->exception, $hint);
@@ -314,22 +328,7 @@ class Client implements ClientInterface
             $event->setEnvironment($this->options->getEnvironment() ?? Event::DEFAULT_ENVIRONMENT);
         }
 
-        $eventDescription = \sprintf(
-            '%s%s [%s]',
-            $event->getLevel() !== null ? $event->getLevel() . ' ' : '',
-            (string) $event->getType(),
-            (string) $event->getId()
-        );
-
-        $isEvent = EventType::event() === $event->getType();
-        $sampleRate = $this->options->getSampleRate();
-
-        // only sample with the `sample_rate` on errors/messages
-        if ($isEvent && $sampleRate < 1 && mt_rand(1, 100) / 100.0 > $sampleRate) {
-            $this->logger->info(\sprintf('The %s will be discarded because it has been sampled.', $eventDescription), ['event' => $event]);
-
-            return null;
-        }
+        $eventDescription = $this->getEventDescription($event);
 
         $event = $this->applyIgnoreOptions($event, $eventDescription);
 
@@ -339,6 +338,7 @@ class Client implements ClientInterface
 
         if ($scope !== null) {
             $beforeEventProcessors = $event;
+            $spanCountBeforeEventProcessors = \count($event->getSpans());
             $event = $scope->applyToEvent($event, $hint, $this->options);
 
             if ($event === null) {
@@ -347,11 +347,16 @@ class Client implements ClientInterface
                     ['event' => $beforeEventProcessors]
                 );
 
+                ClientReportAggregator::getInstance()->addEvent($beforeEventProcessors, Reason::eventProcessor());
+
                 return null;
             }
+
+            $this->recordRemovedSpans($spanCountBeforeEventProcessors, $event, Reason::eventProcessor());
         }
 
         $beforeSendCallback = $event;
+        $spanCountBeforeSendCallback = \count($event->getSpans());
         $event = $this->applyBeforeSendCallback($event, $hint);
 
         if ($event === null) {
@@ -363,9 +368,34 @@ class Client implements ClientInterface
                 ),
                 ['event' => $beforeSendCallback]
             );
+
+            ClientReportAggregator::getInstance()->addEvent($beforeSendCallback, Reason::beforeSend());
+
+            return null;
         }
 
+        $this->recordRemovedSpans($spanCountBeforeSendCallback, $event, Reason::beforeSend());
+
         return $event;
+    }
+
+    private function recordRemovedSpans(int $spanCountBefore, Event $event, Reason $reason): void
+    {
+        $removedSpans = $spanCountBefore - \count($event->getSpans());
+
+        if ($removedSpans > 0) {
+            ClientReportAggregator::getInstance()->add(DataCategory::span(), $reason, $removedSpans);
+        }
+    }
+
+    private function getEventDescription(Event $event): string
+    {
+        return \sprintf(
+            '%s%s [%s]',
+            $event->getLevel() !== null ? $event->getLevel() . ' ' : '',
+            (string) $event->getType(),
+            (string) $event->getId()
+        );
     }
 
     /**
@@ -432,6 +462,46 @@ class Client implements ClientInterface
         return false;
     }
 
+    /**
+     * Gets the HTTP status code of the response from the transaction data.
+     */
+    private function getTransactionHttpStatusCode(Event $event): ?int
+    {
+        $traceData = $event->getContexts()['trace']['data'] ?? null;
+        $statusCode = \is_array($traceData) ? $traceData['http.response.status_code'] ?? null : null;
+
+        if (\is_int($statusCode)) {
+            return $statusCode;
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks if an HTTP status code matches one of the status codes or
+     * inclusive ranges configured in the "trace_ignore_status_codes" option.
+     */
+    private function shouldIgnoreStatusCode(int $statusCode): bool
+    {
+        foreach ($this->options->getTraceIgnoreStatusCodes() as $ignoredStatusCode) {
+            if (\is_int($ignoredStatusCode)) {
+                if ($statusCode === $ignoredStatusCode) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            [$min, $max] = $ignoredStatusCode;
+
+            if ($min <= $statusCode && $statusCode <= $max) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function applyIgnoreOptions(Event $event, string $eventDescription): ?Event
     {
         if ($event->getType() === EventType::event()) {
@@ -448,6 +518,8 @@ class Client implements ClientInterface
                         ['event' => $event]
                     );
 
+                    ClientReportAggregator::getInstance()->addEvent($event, Reason::eventProcessor());
+
                     return null;
                 }
             }
@@ -456,13 +528,22 @@ class Client implements ClientInterface
         if ($event->getType() === EventType::transaction()) {
             $transactionName = $event->getTransaction();
 
-            if ($transactionName === null) {
-                return $event;
-            }
-
-            if ($this->shouldIgnoreTransaction($transactionName)) {
+            if ($transactionName !== null && $this->shouldIgnoreTransaction($transactionName)) {
                 $this->logger->info(
                     \sprintf('The %s will be discarded because it matches a entry in "ignore_transactions".', $eventDescription),
+                    ['event' => $event]
+                );
+
+                ClientReportAggregator::getInstance()->addEvent($event, Reason::eventProcessor());
+
+                return null;
+            }
+
+            $statusCode = $this->getTransactionHttpStatusCode($event);
+
+            if ($statusCode !== null && $this->shouldIgnoreStatusCode($statusCode)) {
+                $this->logger->info(
+                    \sprintf('The %s will be discarded because its HTTP status code %d matches an entry in "trace_ignore_status_codes".', $eventDescription, $statusCode),
                     ['event' => $event]
                 );
 
@@ -477,11 +558,29 @@ class Client implements ClientInterface
     {
         switch ($event->getType()) {
             case EventType::event():
-                return ($this->options->getBeforeSendCallback())($event, $hint);
+                try {
+                    return ($this->options->getBeforeSendCallback())($event, $hint);
+                } catch (\Throwable $exception) {
+                    $this->logger->error(\sprintf('The "before_send" callback failed with exception: "%s".', $exception->getMessage()));
+
+                    return null;
+                }
             case EventType::transaction():
-                return ($this->options->getBeforeSendTransactionCallback())($event, $hint);
+                try {
+                    return ($this->options->getBeforeSendTransactionCallback())($event, $hint);
+                } catch (\Throwable $exception) {
+                    $this->logger->error(\sprintf('The "before_send_transaction" callback failed with exception: "%s".', $exception->getMessage()));
+
+                    return null;
+                }
             case EventType::checkIn():
-                return ($this->options->getBeforeSendCheckInCallback())($event, $hint);
+                try {
+                    return ($this->options->getBeforeSendCheckInCallback())($event, $hint);
+                } catch (\Throwable $exception) {
+                    $this->logger->error(\sprintf('The "before_send_check_in" callback failed with exception: "%s".', $exception->getMessage()));
+
+                    return null;
+                }
             default:
                 return $event;
         }
@@ -507,6 +606,11 @@ class Client implements ClientInterface
     private function addMissingStacktraceToEvent(Event $event): void
     {
         if (!$this->options->shouldAttachStacktrace()) {
+            return;
+        }
+
+        // Only error events carry a stacktrace, for any other type it would be discarded
+        if ($event->getType() !== EventType::event()) {
             return;
         }
 

@@ -1,9 +1,12 @@
 # SENTRY
 Sentry is a Open Source, Self-hosted and cloud-based application performance monitoring & error tracking that helps software teams see clearer, solve quicker, & learn continuously. Disponible in sentry.io.
 # tool_sentry
-Simple sentry plugin to moodle TESTED in moodle 4.x.
+Simple sentry plugin to moodle.
 
-It should work on the previous version but I did not test or configured it yet, it requires PHP>=7.3 for now.
+| Plugin version | Moodle | PHP |
+| --- | --- | --- |
+| 5.3.x | 5.3 | 8.3+ |
+| 1.0.x | 4.x | 8.2+ (the bundled SDK dependencies require 8.2) |
 
 ## How Sentry is started
 
@@ -30,9 +33,11 @@ with Moodle's).
 `php.ini` (or a file in `conf.d`, for example `30-sentry.ini`):
 
 ```ini
-; Moodle 5.1+ keeps the code in public/: /var/www/html/public/admin/tool/sentry/prepend.php
-auto_prepend_file=/var/www/html/admin/tool/sentry/prepend.php
+; Moodle 5.3 keeps the code in public/.
+auto_prepend_file=/var/www/html/public/admin/tool/sentry/prepend.php
 ```
+
+The prepend mode exists from version 5.3.0 (Moodle 5.3).
 
 Environment variables (without `SENTRY_DSN` the prepend file does nothing):
 

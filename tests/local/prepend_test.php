@@ -28,8 +28,8 @@ require_once($CFG->dirroot . '/admin/tool/sentry/vendor/autoload.php');
  * @category   test
  * @copyright  2026 Kelson da Costa Medeiros
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \tool_sentry\local\prepend
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(prepend::class)]
 final class prepend_test extends \advanced_testcase {
     /** @var string|false Value of SENTRY_DSN before the test. */
     private $olddsn;

@@ -25,8 +25,8 @@ use tool_sentry\local\prepend;
  * @category   test
  * @copyright  2026 Kelson da Costa Medeiros
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \tool_sentry\helper
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(helper::class)]
 final class helper_test extends \advanced_testcase {
     protected function setUp(): void {
         parent::setUp();
@@ -50,7 +50,6 @@ final class helper_test extends \advanced_testcase {
      */
     private function set_initialized(bool $value): void {
         $property = new \ReflectionProperty(helper::class, 'initialized');
-        $property->setAccessible(true);
         $property->setValue(null, $value);
     }
 
@@ -129,8 +128,11 @@ final class helper_test extends \advanced_testcase {
             $this->assertNotNull($client);
             $this->assertSame('phpunit', $client->getOptions()->getEnvironment());
         } finally {
-            // The handler registered by init() would send the warnings of the next tests to Sentry.
+            // Remove the handlers added by init() (plugin error handler) and by the SDK (error and exception
+            // listeners), or they would send the warnings of the next tests to Sentry.
             restore_error_handler();
+            restore_error_handler();
+            restore_exception_handler();
         }
     }
 }
