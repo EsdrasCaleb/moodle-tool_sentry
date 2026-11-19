@@ -1,0 +1,62 @@
+name: Release
+
+# Publishes a version when a vX.Y.Z tag is pushed. Tag the commit of the version line branch:
+#   1.0.x (Moodle 4.x): TOOL_SENTRY_1_0
+#   5.3.x (Moodle 5.3): TOOL_SENTRY_5_3
+# Steps: the tag must match $plugin->release, CHANGELOG.md must have the section of the version and the CI of the
+# commit must be green; then the GitHub Release is created with the ZIP and the version is sent to the Moodle
+# Marketplace.
+#
+# Marketplace upload (needs a repository admin):
+#   - secret MOODLE_MARKETPLACE_TOKEN (https://marketplace.moodle.com/account/security);
+#   - variable MARKETPLACE_ENABLED = true (Settings > Secrets and variables > Actions > Variables).
+# The reusable workflow is pinned by SHA (moodlehq/moodle-plugin-release, revision 2026101401).
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  checks: read
+
+jobs:
+  github-release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out the tagged code
+        uses: actions/checkout@v7
+
+      - name: Check the tag against version.php
+        run: bash .github/scripts/release.sh check-tag "${GITHUB_REF_NAME}"
+
+      - name: Check the changelog and write the release notes
+        run: bash .github/scripts/release.sh notes
+
+      - name: Build the plugin ZIP
+        run: bash .github/scripts/release.sh package
+
+      - name: Require green CI on this commit
+        if: ${{ !env.ACT }}
+        run: bash .github/scripts/release.sh ci-green "$GITHUB_SHA"
+
+      - name: Publish the GitHub Release
+        if: ${{ !env.ACT }}
+        run: bash .github/scripts/release.sh publish
+
+  marketplace:
+    name: Moodle Marketplace
+    needs: github-release
+    if: ${{ vars.MARKETPLACE_ENABLED == 'true' }}
+    permissions:
+      contents: read
+    uses: moodlehq/moodle-plugin-release/.github/workflows/moodle-release.yml@7c56bd9ce7b0a3125459924e7bd08570d41b9aa3 # revision 2026101401
+    with:
+      tag: ${{ github.ref_name }}
+    secrets:
+      MOODLE_MARKETPLACE_TOKEN: ${{ secrets.MOODLE_MARKETPLACE_TOKEN }}
